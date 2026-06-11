@@ -133,7 +133,7 @@ export default function App() {
     if (!prodB64) return;
     setProdLoading(true);
     setProdError(null);
-    const apiKey = process.env.REACT_APP_ANTHROPIC_API_KEY;
+    const apiKey = process.env.REACT_APP_GEMINI_API_KEY;
     if (!apiKey) {
       await new Promise(r => setTimeout(r, 1800));
       setProdResult({"tomate cerise":24,"courgette":12,"salade verte":6,"basilic":3});
@@ -141,29 +141,24 @@ export default function App() {
       return;
     }
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
-          "anthropic-dangerous-direct-browser-access": "true",
-        },
-        body: JSON.stringify({
-          model: "claude-haiku-4-5-20251001",
-          max_tokens: 512,
-          messages: [{
-            role: "user",
-            content: [
-              { type:"image", source:{ type:"base64", media_type:prodMime, data:prodB64 } },
-              { type:"text",  text:"Tu es un assistant pour les producteurs maraîchers. Analyse cette photo et compte précisément chaque type de légume, fruit ou fromage visible. Réponds UNIQUEMENT avec un objet JSON valide, sans texte autour, au format: {\"nom du produit\": nombre}. Noms en français minuscules, singulier. Exemple: {\"tomate cerise\": 15, \"courgette\": 8}" }
-            ]
-          }]
-        })
-      });
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                { inline_data: { mime_type: prodMime, data: prodB64 } },
+                { text: "Tu es un assistant pour les producteurs maraîchers. Analyse cette photo et compte précisément chaque type de légume, fruit ou fromage visible. Réponds UNIQUEMENT avec un objet JSON valide, sans texte autour, au format: {\"nom du produit\": nombre}. Noms en français minuscules, singulier. Exemple: {\"tomate cerise\": 15, \"courgette\": 8}" }
+              ]
+            }]
+          })
+        }
+      );
       if (!res.ok) throw new Error(`Erreur API (${res.status})`);
       const data = await res.json();
-      const text = data.content[0].text;
+      const text = data.candidates[0].content.parts[0].text;
       const match = text.match(/\{[\s\S]*\}/);
       if (!match) throw new Error("Réponse IA illisible — réessaie");
       setProdResult(JSON.parse(match[0]));
