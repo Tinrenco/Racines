@@ -1,580 +1,668 @@
 import { useState } from "react";
 
-const MOIS = ["Jan","Fév","Mar","Avr","Mai","Juin","Juil","Août","Sep","Oct","Nov","Déc"];
-const CALENDRIER = {
-  0:  ["🥬 Chou","🌿 Poireau","🥕 Carotte","🧅 Panais"],
-  1:  ["🥬 Chou","🌿 Poireau","🥗 Mâche","🧅 Endive"],
-  2:  ["🌱 Asperge","🌶 Radis","🥬 Épinard","🫛 Pois"],
-  3:  ["🌱 Asperge","🫛 Petits pois","🍓 Fraise","🥬 Épinard"],
-  4:  ["🍓 Fraise","🍒 Cerise","🫘 Fève","🫛 Petits pois"],
-  5:  ["🍅 Tomate","🥒 Courgette","🍓 Fraise","🍒 Cerise"],
-  6:  ["🍅 Tomate","🍆 Aubergine","🫑 Poivron","🍑 Abricot"],
-  7:  ["🍅 Tomate","🫑 Poivron","🍈 Melon","🍑 Pêche"],
-  8:  ["🍇 Raisin","🍂 Figue","🎃 Courge","🫘 Haricot"],
-  9:  ["🎃 Courge","🍎 Pomme","🍄 Champignon","🌰 Châtaigne"],
-  10: ["🥬 Chou","🍎 Pomme","🍐 Poire","🥕 Carotte"],
-  11: ["🥬 Chou","🍊 Clémentine","🌿 Poireau","🥕 Carotte"],
-};
-
-const PRODUITS = {
-  tomate:    { emoji:"🍅", name:"Tomate",       saison:"★ Vedette",      origin:"Drôme · Rhône",   sub:"Producteurs de la Drôme & du Rhône",     eco:"Km 0 · cueilli à maturité · non traité" },
-  courgette: { emoji:"🥒", name:"Courgette",    saison:"Pleine saison",  origin:"Ain · Isère",     sub:"Producteurs de l'Ain & de l'Isère",      eco:"Culture raisonnée · Circuit court < 80km" },
-  peche:     { emoji:"🍑", name:"Pêche",        saison:"Début saison",   origin:"Ardèche",         sub:"Vergers d'Ardèche — début de saison",    eco:"Sans traitement post-récolte · Variétés locales" },
-  basilic:   { emoji:"🌿", name:"Basilic",      saison:"Pleine saison",  origin:"Local · Bio",     sub:"Production locale & biologique · Lyon",  eco:"100% bio · Cultivé en serre locale" },
-  fromage:   { emoji:"🧀", name:"St-Marcellin", saison:"En affinage",    origin:"IGP · Isère",     sub:"IGP Isère — affinage optimal ce mois",   eco:"Lait cru · Elevage pâturant local" },
-};
-
-const PRODUCTEURS = [
-  { emoji:"👨‍🌾", bg:"#e8f4ea", name:"Ferme des Collines", lieu:"Drôme · 42 km", type:"Maraîchage bio", produits:"Tomates, courgettes, basilic", certif:"AB · HVE", note:"4.9", nbAvis:128, dispo:"Panier dispo ven." },
-  { emoji:"🧑‍🌾", bg:"#fef3e8", name:"Vergers Dupont",     lieu:"Ardèche · 68 km", type:"Arboriculture",  produits:"Pêches, abricots, cerises",   certif:"Local garanti", note:"4.7", nbAvis:84, dispo:"Marché sam. matin" },
-  { emoji:"👩‍🌾", bg:"#fce7e0", name:"GAEC du Rhône",       lieu:"Ain · 35 km",  type:"Fromages & lait", produits:"St-Marcellin, yaourts, beurre",certif:"IGP · Fermier", note:"5.0", nbAvis:61, dispo:"Vente directe mer." },
+const PRODUITS = [
+  { id:1, nom:"Tomate cerise",   emoji:"🍅", producteur:"Michel — Drôme",             prix:2.90, unite:"500g",    bio:true  },
+  { id:2, nom:"Courgette",       emoji:"🥒", producteur:"Ferme Dupont — Ain",          prix:1.50, unite:"pièce",  bio:false },
+  { id:3, nom:"Pêche",           emoji:"🍑", producteur:"Vergers Martin — Ardèche",    prix:3.20, unite:"kg",     bio:true  },
+  { id:4, nom:"Basilic",         emoji:"🌿", producteur:"Les Serres du Rhône",         prix:1.20, unite:"bouquet",bio:true  },
+  { id:5, nom:"Saint-Marcellin", emoji:"🧀", producteur:"Fromagerie Besson — Isère",   prix:2.40, unite:"pièce",  bio:false },
+  { id:6, nom:"Salade verte",    emoji:"🥬", producteur:"Michel — Drôme",             prix:1.00, unite:"pièce",  bio:true  },
 ];
 
-const RESTOS = [
-  { emoji:"🏡", bg:"#fef3e8", name:"Le Potager des Halles", type:"Bistrot · 2e arr · Presqu'île", dist:"0,4 km", price:"14–22€", tags:[{label:"🌱 Éco-label",cls:"eco"},{label:"Local",cls:"local"}] },
-  { emoji:"🔥", bg:"#fce7e0", name:"Braise & Racines",      type:"Gastronomique · 6e arr",        dist:"1,2 km", price:"35–55€", tags:[{label:"Nouveau",cls:"new"},{label:"Bio",cls:"bio"}] },
-  { emoji:"🌿", bg:"#e8f4ea", name:"Chlorophylle",           type:"Végétarien · Croix-Rousse",     dist:"1,8 km", price:"11–18€", tags:[{label:"🌱 Éco-label",cls:"eco"},{label:"Bio",cls:"bio"}] },
-  { emoji:"🥂", bg:"#f5f0e8", name:"Café des Canuts",        type:"Bouchon moderne · 1er arr",     dist:"2,1 km", price:"16–28€", tags:[{label:"Local",cls:"local"}] },
+const PRODUITS_FLASH = [
+  { id:7, nom:"Tomates rondes (surplus)", emoji:"🍅", producteur:"Michel — Drôme", prix:1.20, prixOriginal:2.50, unite:"kg", bio:true, stock:8 },
+];
+
+const POINTS_COLLECTE = [
+  { id:1, nom:"Place Carnot",          arrdt:"2e",  distance:"8 min",  statut:"En route",  heure:"18h22", places:12 },
+  { id:2, nom:"Hôtel de Ville",        arrdt:"1er", distance:"12 min", statut:"Disponible",heure:"17h45", places:5  },
+  { id:3, nom:"Croix-Rousse — Bd CR",  arrdt:"4e",  distance:"15 min", statut:"Disponible",heure:"19h00", places:20 },
+  { id:4, nom:"Jean Macé",             arrdt:"7e",  distance:"18 min", statut:"Terminé",   heure:"16h30", places:0  },
 ];
 
 const RECETTES = [
-  { emoji:"🥗", bg:"#fef3e8", name:"Gaspacho de tomates de la Drôme",  meta:"⏱ 15 min · 4 pers · Végétarien",          diff:1 },
-  { emoji:"🍕", bg:"#fce7e0", name:"Tarte tatin tomate & basilic",      meta:"⏱ 45 min · 6 pers · Chef Viannay",         diff:2 },
-  { emoji:"🥘", bg:"#e8f4ea", name:"Ratatouille niçoise revisitée",     meta:"⏱ 60 min · 4 pers · Éco-responsable",      diff:3 },
-  { emoji:"🫙", bg:"#f5f0e8", name:"Coulis de tomate à conserver",      meta:"⏱ 30 min · Zéro déchet · Anti-gaspi",      diff:1 },
-];
-
-const ADRESSES = [
-  { icon:"🏪", name:"Marché de la Croix-Rousse", type:"Marché alimentaire",              rue:"Bd de la Croix-Rousse · 4e arr",       horaires:"Mar–Sam 6h–13h30 · 12 producteurs" },
-  { icon:"🌿", name:"La Ferme de la Côte",        type:"Producteur direct · Drôme",       rue:"Point de vente : 8 rue Ferrachat · 7e", horaires:"Ven 16h–19h · Panier hebdo dispo" },
-  { icon:"🛒", name:"Épicerie du Soleil",          type:"Épicerie fine & bio",             rue:"23 rue de la République · 2e arr",     horaires:"Lun–Sam 9h–19h30" },
-  { icon:"🤝", name:"AMAP les Jardins du Rhône",  type:"Association · Panier hebdomadaire",rue:"Distribution : Place Carnot · 2e",     horaires:"Mer 18h–19h30 · Inscription ouverte" },
+  { id:1, nom:"Gaspacho de tomates cerises",     produits:[1,4], temps:15, diff:1, veggie:true,  emoji:"🥗", bg:"#fef3e8" },
+  { id:2, nom:"Tarte courgette-chèvre",           produits:[2],   temps:40, diff:2, veggie:true,  emoji:"🥧", bg:"#fce7e0" },
+  { id:3, nom:"Carpaccio de pêches au basilic",   produits:[3,4], temps:10, diff:1, veggie:true,  emoji:"🍑", bg:"#e8f4ea" },
+  { id:4, nom:"Salade estivale complète",         produits:[1,2,6],temps:20,diff:1, veggie:true,  emoji:"🥗", bg:"#f5f0e8" },
+  { id:5, nom:"Risotto courgette & St-Marcellin", produits:[2,5], temps:35, diff:2, veggie:true,  emoji:"🍚", bg:"#fef3e8" },
 ];
 
 const BADGES = [
-  { emoji:"🌱", name:"Premier pas",     desc:"1ère adresse locale visitée",     unlocked:true  },
-  { emoji:"🛒", name:"Locavore",        desc:"5 achats locaux validés",          unlocked:true  },
-  { emoji:"👨‍🍳", name:"Chef du marché", desc:"3 recettes de saison cuisinées",   unlocked:true  },
-  { emoji:"🌍", name:"Zéro gaspi",      desc:"Signaler 5 invendus sauvés",       unlocked:false },
-  { emoji:"📅", name:"Saisons master",  desc:"Consommer local 4 saisons de suite",unlocked:false },
-  { emoji:"🏆", name:"Top du board",    desc:"Atteindre le top 3 entre amis",    unlocked:false },
+  { id:1, nom:"Première Saison",      emoji:"🌱", desc:"1ère commande passée",        debloque:true  },
+  { id:2, nom:"Locavore",             emoji:"📍", desc:"3 commandes consécutives",     debloque:true  },
+  { id:3, nom:"Chef en herbe",        emoji:"👨‍🍳", desc:"5 recettes cuisinées",         debloque:false },
+  { id:4, nom:"Anti-gaspi",           emoji:"♻️", desc:"2 paniers flash commandés",    debloque:false },
+  { id:5, nom:"Passionné des Saisons",emoji:"🏆", desc:"6 mois de suite",              debloque:false },
+  { id:6, nom:"Ambassadeur",          emoji:"🌟", desc:"5 amis parrainés",             debloque:false },
 ];
 
 const AMIS = [
-  { rank:1, avatar:"🧑‍🦱", name:"Théo",    score:2840, badge:"🏆", trend:"→" },
-  { rank:2, avatar:"👩‍🦰", name:"Camille", score:2310, badge:"🥈", trend:"↑" },
-  { rank:3, avatar:"🧑",   name:"Toi",     score:1980, badge:"🥉", trend:"↑", isMe:true },
-  { rank:4, avatar:"👨‍🦳", name:"Marc",    score:1540, badge:"",   trend:"↓" },
-  { rank:5, avatar:"👩",   name:"Léa",     score:1200, badge:"",   trend:"→" },
+  { nom:"Lucas",  score:1240, rang:1, emoji:"🥇", moi:false },
+  { nom:"Toi",    score:980,  rang:2, emoji:"🥈", moi:true  },
+  { nom:"Emma",   score:820,  rang:3, emoji:"🥉", moi:false },
+  { nom:"Thomas", score:650,  rang:4, emoji:"4️⃣", moi:false },
+  { nom:"Sophie", score:430,  rang:5, emoji:"5️⃣", moi:false },
 ];
 
-const TAG_STYLES = {
-  eco:   { background:"#e8f4ea", color:"#3D5A3E" },
-  local: { background:"#fef3e2", color:"#a16207" },
-  new:   { background:"#fce7e0", color:"#C4622D" },
-  bio:   { background:"#e6f4ea", color:"#276749" },
+const MOIS_LABELS = ["Jan","Fév","Mar","Avr","Mai","Juin","Juil","Août","Sep","Oct","Nov","Déc"];
+
+const C = {
+  soil:"#2C1F0E", moss:"#3D5A3E", sage:"#7A9E7E",
+  cream:"#F5F0E8", wheat:"#E8D9B5", terracotta:"#C4622D",
+  gold:"#D4A843", mist:"#F9F6F1",
 };
 
-const PAGES = ["saisons","carte","recettes","adresses","profil"];
-
 export default function App() {
-  const [activeProduit, setActiveProduit]   = useState("tomate");
-  const [activeTab, setActiveTab]           = useState("restos");
-  const [restoFilter, setRestoFilter]       = useState("Tous");
-  const [recetteFilter, setRecetteFilter]   = useState("Toutes");
-  const [adresseFilter, setAdresseFilter]   = useState("Tout Lyon");
-  const [activePage, setActivePage]         = useState("saisons");
-  const [activeMois, setActiveMois]         = useState(5); // juin = index 5
+  const [activePage, setActivePage]       = useState("accueil");
+  const [panier, setPanier]               = useState({});
+  const [flashPanier, setFlashPanier]     = useState({});
+  const [commandeStep, setCommandeStep]   = useState("selection");
+  const [selectedPoint, setSelectedPoint] = useState(null);
+  const [commandePassee, setCommandePassee] = useState(false);
+  const [recetteFilter, setRecetteFilter] = useState("Toutes");
 
-  const p = PRODUITS[activeProduit];
+  const totalItems = Object.values(panier).reduce((a,b)=>a+b,0)
+    + Object.values(flashPanier).reduce((a,b)=>a+b,0);
 
-  const s = {
-    page:       { fontFamily:"'DM Sans', sans-serif", background:"#F9F6F1", color:"#1A1208", maxWidth:430, margin:"0 auto", minHeight:"100vh", position:"relative" },
-    header:     { background:"#2C1F0E", padding:"14px 18px", display:"flex", alignItems:"center", justifyContent:"space-between", position:"sticky", top:0, zIndex:100 },
-    logo:       { fontFamily:"Georgia, serif", fontSize:"1.35rem", color:"#E8D9B5", letterSpacing:"0.04em" },
-    logoSpan:   { color:"#7A9E7E", fontStyle:"italic" },
-    logoFork:   { fontSize:"1.1rem", marginRight:6 },
-    locPill:    { background:"rgba(255,255,255,0.12)", color:"#E8D9B5", fontSize:"0.7rem", padding:"5px 10px", borderRadius:20, display:"flex", alignItems:"center", gap:4 },
-    hero:       { background:"linear-gradient(155deg,#3D5A3E 0%,#2a3d2b 100%)", padding:"22px 18px 18px", position:"relative", overflow:"hidden" },
-    heroLabel:  { fontSize:"0.6rem", fontWeight:700, letterSpacing:"0.15em", textTransform:"uppercase", color:"#7A9E7E", marginBottom:3 },
-    heroTitle:  { fontFamily:"Georgia, serif", fontSize:"1.75rem", color:"#F5F0E8", lineHeight:1.1, marginBottom:8 },
-    heroTitleEm:{ color:"#D4A843", fontStyle:"italic" },
+  const totalPrix = Object.entries(panier).reduce((sum,[id,qty]) => {
+    const p = PRODUITS.find(x=>x.id===+id);
+    return sum + (p ? p.prix*qty : 0);
+  }, 0) + Object.entries(flashPanier).reduce((sum,[id,qty]) => {
+    const p = PRODUITS_FLASH.find(x=>x.id===+id);
+    return sum + (p ? p.prix*qty : 0);
+  }, 0);
+
+  const addP   = (id) => setPanier(prev=>({...prev,[id]:(prev[id]||0)+1}));
+  const removeP = (id) => setPanier(prev=>{ const n={...prev}; if(n[id]>1)n[id]--; else delete n[id]; return n; });
+  const addF   = (id) => setFlashPanier(prev=>({...prev,[id]:(prev[id]||0)+1}));
+  const removeF = (id) => setFlashPanier(prev=>{ const n={...prev}; if(n[id]>1)n[id]--; else delete n[id]; return n; });
+
+  const produitIdSet = new Set(Object.keys(panier).map(Number));
+  const recettesSuggerees = RECETTES.filter(r=>r.produits.some(pid=>produitIdSet.has(pid)));
+  const produitsEnPanier = PRODUITS.filter(p=>panier[p.id]>0);
+  const flashEnPanier = PRODUITS_FLASH.filter(p=>flashPanier[p.id]>0);
+
+  const passerCommande = () => {
+    setCommandePassee(true);
+    setCommandeStep("suivi");
+    setActivePage("accueil");
+  };
+
+  const recettesFiltrees = recetteFilter==="Mon panier" ? recettesSuggerees
+    : recetteFilter==="Rapide" ? RECETTES.filter(r=>r.temps<=15)
+    : recetteFilter==="Facile" ? RECETTES.filter(r=>r.diff===1)
+    : recetteFilter==="Végé"   ? RECETTES.filter(r=>r.veggie)
+    : RECETTES;
+
+  const navItems = [["🌿","accueil","Accueil"],["🛒","commander","Commander"],["👨‍🍳","recettes","Recettes"],["🗺️","carte","Carte"],["🏆","profil","Profil"]];
+
+  const statutColor = (s) => s==="En route"?"#FEF3E8" : s==="Disponible"?"#E8F4EA" : "#F5F2EE";
+  const statutText  = (s) => s==="En route"?C.terracotta : s==="Disponible"?C.moss : "#999";
+  const statutIcon  = (s) => s==="En route"?"🚛 " : s==="Disponible"?"✅ " : "❌ ";
+
+  const stepLabel = {selection:"Choisir mes produits",recap:"Mon panier",collecte:"Point de collecte",confirmation:"Confirmation",suivi:"Suivi commande"};
+
+  const ss = {
+    page:       { fontFamily:"'DM Sans',Calibri,sans-serif", background:C.mist, color:C.soil, maxWidth:430, margin:"0 auto", minHeight:"100vh" },
+    header:     { background:C.soil, padding:"14px 18px", display:"flex", alignItems:"center", justifyContent:"space-between", position:"sticky", top:0, zIndex:100 },
+    logo:       { fontFamily:"Georgia,Cambria,serif", fontSize:"1.35rem", color:C.wheat, letterSpacing:"0.04em" },
+    logoEm:     { color:C.sage, fontStyle:"italic" },
+    locPill:    { background:"rgba(255,255,255,0.12)", color:C.wheat, fontSize:"0.7rem", padding:"5px 10px", borderRadius:20 },
+    panierBadge:{ background:C.terracotta, color:"white", fontSize:"0.65rem", fontWeight:700, padding:"4px 9px", borderRadius:20, cursor:"pointer" },
+    hero:       { background:`linear-gradient(155deg,${C.moss} 0%,#2a3d2b 100%)`, padding:"22px 18px 18px", position:"relative", overflow:"hidden" },
+    heroLabel:  { fontSize:"0.6rem", fontWeight:700, letterSpacing:"0.15em", textTransform:"uppercase", color:C.sage, marginBottom:3 },
+    heroTitle:  { fontFamily:"Georgia,Cambria,serif", fontSize:"1.75rem", color:C.cream, lineHeight:1.1, marginBottom:8 },
+    heroEm:     { color:C.gold, fontStyle:"italic" },
     heroDesc:   { fontSize:"0.77rem", color:"rgba(245,240,232,0.7)", lineHeight:1.5, maxWidth:280 },
-    heroStats:  { display:"flex", gap:18, marginTop:16 },
-    statNum:    { fontFamily:"Georgia, serif", fontSize:"1.4rem", color:"#D4A843", display:"block" },
-    statLabel:  { fontSize:"0.6rem", color:"rgba(245,240,232,0.5)", letterSpacing:"0.08em", textTransform:"uppercase" },
-    ecoBadge:   { position:"absolute", top:18, right:16, background:"rgba(122,158,126,0.22)", border:"1px solid rgba(122,158,126,0.4)", color:"#7A9E7E", fontSize:"0.62rem", fontWeight:700, padding:"5px 10px", borderRadius:20 },
-    section:    { padding:"18px 18px 0" },
-    secHeader:  { display:"flex", alignItems:"baseline", justifyContent:"space-between", marginBottom:12 },
-    secTitle:   { fontFamily:"Georgia, serif", fontSize:"1.05rem", color:"#2C1F0E" },
-    seeAll:     { fontSize:"0.68rem", color:"#C4622D", fontWeight:600, cursor:"pointer" },
-    produitsRow:{ display:"flex", gap:10, overflowX:"auto", paddingBottom:10, scrollbarWidth:"none" },
-    prodCard:   (a) => ({ minWidth:105, background:a?"#3D5A3E":"white", border:`2px solid ${a?"#3D5A3E":"transparent"}`, borderRadius:14, padding:"12px 10px", cursor:"pointer", textAlign:"center", boxShadow:"0 2px 8px rgba(44,31,14,0.06)", transition:"all 0.18s", flexShrink:0 }),
-    prodEmoji:  { fontSize:"1.9rem", display:"block", marginBottom:5 },
-    prodName:   (a) => ({ fontWeight:600, fontSize:"0.75rem", color:a?"white":"#2C1F0E", display:"block" }),
-    prodOrigin: (a) => ({ fontSize:"0.6rem", color:a?"rgba(255,255,255,0.65)":"#6B5B3E", display:"block", marginTop:2 }),
-    prodSeason: (a) => ({ display:"inline-block", marginTop:5, fontSize:"0.58rem", fontWeight:700, background:a?"rgba(255,255,255,0.15)":"#E8D9B5", color:a?"white":"#C4622D", padding:"2px 7px", borderRadius:10 }),
-    panel:      { margin:"14px 18px 0", background:"white", borderRadius:18, overflow:"hidden", boxShadow:"0 4px 20px rgba(44,31,14,0.08)" },
-    panelHero:  { background:"linear-gradient(135deg,#3D5A3E,#2a3d2b)", padding:"18px", display:"flex", alignItems:"center", gap:14 },
-    panelEmoji: { fontSize:"3.2rem" },
-    panelName:  { fontFamily:"Georgia, serif", fontSize:"1.35rem", color:"#F5F0E8" },
-    panelSub:   { fontSize:"0.7rem", color:"rgba(245,240,232,0.65)", marginTop:2 },
-    panelEco:   { marginTop:7, fontSize:"0.63rem", color:"#7A9E7E", fontWeight:500 },
-    tabs:       { display:"flex", borderBottom:"1px solid #E8D9B5", background:"white", overflowX:"auto" },
-    tab:        (a) => ({ flex:1, minWidth:70, padding:"11px 4px", textAlign:"center", fontSize:"0.63rem", fontWeight:700, color:a?"#3D5A3E":"#6B5B3E", cursor:"pointer", borderBottom:`2px solid ${a?"#3D5A3E":"transparent"}`, transition:"all 0.18s", whiteSpace:"nowrap" }),
-    tabContent: { padding:14 },
-    pillRow:    { display:"flex", gap:7, overflowX:"auto", paddingBottom:4, marginBottom:12, scrollbarWidth:"none" },
-    pill:       (a) => ({ whiteSpace:"nowrap", fontSize:"0.66rem", fontWeight:500, padding:"5px 11px", borderRadius:20, border:`1.5px solid ${a?"#2C1F0E":"#E8D9B5"}`, background:a?"#2C1F0E":"white", color:a?"#E8D9B5":"#6B5B3E", cursor:"pointer", flexShrink:0 }),
-    restoItem:  { display:"flex", alignItems:"center", gap:11, padding:"10px 0" },
-    restoAvatar:(bg) => ({ width:42, height:42, borderRadius:11, background:bg, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"1.3rem", flexShrink:0 }),
-    restoName:  { fontWeight:700, fontSize:"0.8rem", color:"#2C1F0E" },
-    restoMeta:  { fontSize:"0.66rem", color:"#6B5B3E", marginTop:2 },
-    restoTags:  { display:"flex", gap:4, marginTop:4, flexWrap:"wrap" },
-    tag:        (cls) => ({ fontSize:"0.57rem", padding:"2px 6px", borderRadius:7, fontWeight:600, ...TAG_STYLES[cls] }),
-    restoRight: { textAlign:"right", flexShrink:0, marginLeft:"auto" },
-    restoDist:  { fontSize:"0.63rem", color:"#6B5B3E" },
-    restoPrice: { fontSize:"0.7rem", fontWeight:700, color:"#2C1F0E", marginTop:2 },
-    resaBtn:    { marginTop:4, background:"#3D5A3E", color:"white", fontSize:"0.58rem", fontWeight:700, padding:"3px 8px", borderRadius:8, border:"none", cursor:"pointer" },
-    recItem:    { display:"flex", gap:11, padding:"10px 0", cursor:"pointer" },
-    recImg:     (bg) => ({ width:58, height:58, borderRadius:11, background:bg, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"1.7rem", flexShrink:0 }),
-    recName:    { fontWeight:700, fontSize:"0.8rem", color:"#2C1F0E" },
-    recMeta:    { fontSize:"0.66rem", color:"#6B5B3E", marginTop:2 },
-    diffRow:    { display:"flex", gap:3, marginTop:5 },
-    dot:        (f) => ({ width:6, height:6, borderRadius:"50%", background:f?"#C4622D":"#E8D9B5" }),
-    adrItem:    { display:"flex", gap:11, padding:"10px 0", alignItems:"flex-start" },
-    adrIcon:    { width:38, height:38, borderRadius:10, background:"#E8D9B5", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"1.15rem", flexShrink:0 },
-    adrName:    { fontWeight:700, fontSize:"0.8rem", color:"#2C1F0E" },
-    adrType:    { fontSize:"0.63rem", color:"#C4622D", fontWeight:600, marginTop:1 },
-    adrRue:     { fontSize:"0.63rem", color:"#6B5B3E", marginTop:2 },
-    adrHoraires:{ fontSize:"0.6rem", color:"#3D5A3E", marginTop:2, fontWeight:600 },
-    trendGrid:  { display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 },
-    trendCard:  (f) => ({ background:f?"linear-gradient(135deg,#2C1F0E,#3d2a10)":"white", borderRadius:16, padding:14, cursor:"pointer", boxShadow:"0 2px 8px rgba(44,31,14,0.07)" }),
-    trendEmoji: { fontSize:"1.5rem", marginBottom:5 },
-    trendLabel: (f) => ({ fontSize:"0.58rem", fontWeight:700, letterSpacing:"0.1em", textTransform:"uppercase", color:f?"#D4A843":"#C4622D", marginBottom:3 }),
-    trendName:  (f) => ({ fontFamily:"Georgia, serif", fontSize:"0.92rem", color:f?"#E8D9B5":"#2C1F0E", lineHeight:1.2 }),
-    trendSub:   (f) => ({ fontSize:"0.63rem", color:f?"rgba(245,240,232,0.5)":"#6B5B3E", marginTop:4 }),
-    ecoBlock:   { margin:"18px 18px 0", background:"linear-gradient(135deg,#3D5A3E,#2d4a2e)", borderRadius:18, padding:18 },
-    ecoTitle:   { fontFamily:"Georgia, serif", fontSize:"1rem", color:"#E8D9B5", marginBottom:3 },
-    ecoSub:     { fontSize:"0.68rem", color:"rgba(245,240,232,0.55)", marginBottom:14 },
+    heroCTA:    { marginTop:16, background:C.gold, color:C.soil, fontSize:"0.8rem", fontWeight:700, padding:"11px 20px", borderRadius:25, border:"none", cursor:"pointer" },
+    ecoBadge:   { position:"absolute", top:18, right:16, background:"rgba(122,158,126,0.22)", border:"1px solid rgba(122,158,126,0.4)", color:C.sage, fontSize:"0.62rem", fontWeight:700, padding:"5px 10px", borderRadius:20 },
+    sec:        { padding:"18px 18px 0" },
+    secH:       { display:"flex", alignItems:"baseline", justifyContent:"space-between", marginBottom:12 },
+    secTitle:   { fontFamily:"Georgia,Cambria,serif", fontSize:"1.05rem", color:C.soil },
+    seeAll:     { fontSize:"0.68rem", color:C.terracotta, fontWeight:600, cursor:"pointer" },
+    divider:    { height:1, background:C.wheat, margin:"18px 18px 0" },
+    card:       { background:"white", borderRadius:16, padding:"14px 16px", boxShadow:"0 2px 12px rgba(44,31,14,0.07)", marginBottom:10 },
+    ctaBtn:     (off) => ({ width:"100%", background:off?"#ccc":C.moss, color:"white", fontSize:"0.85rem", fontWeight:700, padding:"14px", borderRadius:14, border:"none", cursor:off?"not-allowed":"pointer" }),
+    ctaSec:     { width:"100%", background:"transparent", color:C.moss, fontSize:"0.78rem", fontWeight:600, padding:"10px", borderRadius:14, border:`1.5px solid ${C.moss}`, cursor:"pointer", marginTop:8 },
+    pill:       (a) => ({ whiteSpace:"nowrap", fontSize:"0.66rem", fontWeight:500, padding:"5px 11px", borderRadius:20, border:`1.5px solid ${a?C.soil:C.wheat}`, background:a?C.soil:"white", color:a?C.cream:"#6B5B3E", cursor:"pointer", flexShrink:0 }),
+    pillRow:    { display:"flex", gap:7, overflowX:"auto", paddingBottom:4, marginBottom:14, scrollbarWidth:"none" },
+    ecoBlock:   { background:`linear-gradient(135deg,${C.moss},#2d4a2e)`, borderRadius:18, padding:18 },
     ecoBarRow:  { display:"flex", alignItems:"center", gap:8, marginBottom:8 },
     ecoBarLabel:{ fontSize:"0.63rem", color:"rgba(245,240,232,0.7)", width:80, flexShrink:0 },
     ecoBarTrack:{ flex:1, height:5, background:"rgba(255,255,255,0.1)", borderRadius:10, overflow:"hidden" },
-    ecoBarFill: (pct) => ({ height:"100%", width:`${pct}%`, background:"#7A9E7E", borderRadius:10 }),
-    ecoBarVal:  { fontSize:"0.63rem", fontWeight:700, color:"#7A9E7E", width:24, textAlign:"right", flexShrink:0 },
-    nav:        { background:"white", borderTop:"1px solid #E8D9B5", display:"flex", padding:"8px 0 6px", marginTop:22, position:"sticky", bottom:0 },
-    navItem:    (a) => ({ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:3, cursor:"pointer", padding:"3px 0" }),
-    navIcon:    { fontSize:"1.2rem" },
-    navLabel:   (a) => ({ fontSize:"0.57rem", fontWeight:600, color:a?"#3D5A3E":"#6B5B3E" }),
-    divider:    { height:1, background:"#E8D9B5", margin:"18px 18px 0" },
-    // Calendrier
-    calStrip:   { display:"flex", gap:6, overflowX:"auto", paddingBottom:6, scrollbarWidth:"none" },
-    calMois:    (a) => ({ minWidth:48, padding:"7px 4px", borderRadius:10, textAlign:"center", background:a?"#3D5A3E":"white", border:`1.5px solid ${a?"#3D5A3E":"#E8D9B5"}`, cursor:"pointer", flexShrink:0 }),
-    calMoisLabel:(a)=>({ fontSize:"0.65rem", fontWeight:700, color:a?"white":"#6B5B3E", display:"block" }),
-    calMoisDot: (a) => ({ width:5, height:5, borderRadius:"50%", background:a?"#D4A843":"#E8D9B5", margin:"4px auto 0" }),
-    calProdGrid:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginTop:14 },
-    calProdItem:{ background:"white", borderRadius:12, padding:"10px 12px", boxShadow:"0 2px 8px rgba(44,31,14,0.06)", display:"flex", alignItems:"center", gap:8 },
-    calProdText:{ fontSize:"0.73rem", fontWeight:600, color:"#2C1F0E" },
-    calWarning: { background:"#fef3e8", border:"1px solid #F5D9A0", borderRadius:12, padding:"10px 14px", marginTop:12, fontSize:"0.68rem", color:"#92600A", lineHeight:1.5 },
-    // Badges
-    badgeGrid:  { display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:10 },
-    badgeCard:  (u) => ({ background:u?"white":"#F5F2EE", borderRadius:14, padding:"14px 8px", textAlign:"center", boxShadow:u?"0 2px 8px rgba(44,31,14,0.07)":"none", opacity:u?1:0.6 }),
-    badgeEmoji: (u) => ({ fontSize:"2rem", display:"block", filter:u?"none":"grayscale(1)" }),
-    badgeName:  { fontSize:"0.68rem", fontWeight:700, color:"#2C1F0E", marginTop:6, display:"block" },
-    badgeDesc:  { fontSize:"0.57rem", color:"#6B5B3E", marginTop:3, lineHeight:1.3 },
-    badgeLock:  { fontSize:"0.65rem", display:"block", marginTop:4, color:"#aaa" },
-    // Leaderboard
-    boardItem:  (me) => ({ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", background:me?"linear-gradient(135deg,#3D5A3E,#2d4a2e)":"white", borderRadius:14, marginBottom:8, boxShadow:"0 2px 8px rgba(44,31,14,0.06)" }),
-    boardRank:  (me) => ({ fontFamily:"Georgia, serif", fontSize:"1rem", fontWeight:700, color:me?"#D4A843":"#2C1F0E", width:22, flexShrink:0, textAlign:"center" }),
-    boardAvatar:{ fontSize:"1.5rem", flexShrink:0 },
-    boardName:  (me) => ({ fontWeight:700, fontSize:"0.8rem", color:me?"#E8D9B5":"#2C1F0E", flex:1 }),
-    boardScore: (me) => ({ fontSize:"0.72rem", fontWeight:700, color:me?"#7A9E7E":"#3D5A3E" }),
-    boardTrend: (me) => ({ fontSize:"0.75rem", color:me?"rgba(255,255,255,0.5)":"#aaa", marginLeft:4 }),
-    boardBadge: { fontSize:"0.9rem" },
-    // Profil producteur
-    prodCard2:  { background:"white", borderRadius:16, overflow:"hidden", marginBottom:12, boxShadow:"0 2px 8px rgba(44,31,14,0.06)" },
-    prodHeader: (bg) => ({ background:bg, padding:"14px", display:"flex", alignItems:"center", gap:12 }),
-    prodAva:    { fontSize:"2.2rem" },
-    prodPName:  { fontWeight:700, fontSize:"0.85rem", color:"#2C1F0E" },
-    prodPLieu:  { fontSize:"0.63rem", color:"#6B5B3E", marginTop:2 },
-    prodCertif: { display:"inline-block", fontSize:"0.57rem", fontWeight:700, background:"#3D5A3E", color:"white", padding:"2px 7px", borderRadius:8, marginTop:4 },
-    prodBody:   { padding:"12px 14px" },
-    prodPRow:   { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 },
-    prodPLabel: { fontSize:"0.63rem", color:"#6B5B3E" },
-    prodPVal:   { fontSize:"0.72rem", fontWeight:700, color:"#2C1F0E" },
-    prodNote:   { display:"flex", alignItems:"center", gap:4 },
-    prodNoteNum:{ fontFamily:"Georgia, serif", fontSize:"1.1rem", color:"#D4A843" },
-    prodNoteAvis:{ fontSize:"0.6rem", color:"#6B5B3E" },
-    contactBtn: { width:"100%", background:"#3D5A3E", color:"white", border:"none", borderRadius:10, padding:"9px", fontSize:"0.72rem", fontWeight:700, cursor:"pointer", marginTop:4 },
-    // Profil perso
-    profilHero: { background:"linear-gradient(135deg,#2C1F0E,#3d2a10)", padding:"24px 18px", textAlign:"center" },
-    profilAva:  { fontSize:"3.5rem", display:"block" },
-    profilName: { fontFamily:"Georgia, serif", fontSize:"1.2rem", color:"#E8D9B5", marginTop:8 },
-    profilSub:  { fontSize:"0.68rem", color:"rgba(245,240,232,0.55)", marginTop:4 },
-    profilScore:{ display:"inline-block", background:"#3D5A3E", color:"#D4A843", fontFamily:"Georgia, serif", fontSize:"1.1rem", fontWeight:700, padding:"6px 18px", borderRadius:20, marginTop:12 },
+    ecoBarFill: (p) => ({ height:"100%", width:`${p}%`, background:C.sage, borderRadius:10 }),
+    ecoBarVal:  { fontSize:"0.63rem", fontWeight:700, color:C.sage, width:24, textAlign:"right" },
+    nav:        { background:"white", borderTop:`1px solid ${C.wheat}`, display:"flex", padding:"8px 0 6px", position:"sticky", bottom:0, zIndex:100 },
+    navItem:    (a) => ({ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:3, cursor:"pointer", padding:"3px 0", position:"relative" }),
+    navLabel:   (a) => ({ fontSize:"0.57rem", fontWeight:600, color:a?C.moss:"#6B5B3E" }),
+    navBadge:   { position:"absolute", top:-2, right:"14%", background:C.terracotta, color:"white", fontSize:"0.5rem", fontWeight:700, padding:"1px 5px", borderRadius:10 },
   };
 
-  const restoPills = ["Tous","Bistrots","Gastro","Végé","< 15€"];
-  const recPills   = ["Toutes","Rapide","Facile","Chef","Végé"];
-  const adrPills   = ["Tout Lyon","Marchés","Épiceries","Producteurs","AMAP"];
-  const navItems   = [["🌿","saisons","Saisons"],["📅","carte","Calendrier"],["👨‍🍳","recettes","Recettes"],["🏆","adresses","Classement"],["👤","profil","Profil"]];
-
   return (
-    <div style={s.page}>
+    <div style={ss.page}>
 
       {/* HEADER */}
-      <div style={s.header}>
-        <div style={s.logo}>Ra<span style={s.logoSpan}>cines</span></div>
-        <div style={s.locPill}>📍 Lyon</div>
+      <div style={ss.header}>
+        <div style={ss.logo}>Ra<span style={ss.logoEm}>cines</span></div>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <div style={ss.locPill}>📍 Lyon</div>
+          {totalItems>0 && <div style={ss.panierBadge} onClick={()=>{setActivePage("commander");setCommandeStep("recap")}}>🛒 {totalItems}</div>}
+        </div>
       </div>
 
-      {/* PAGE SAISONS */}
-      {activePage === "saisons" && <>
-        <div style={s.hero}>
-          <div style={s.heroLabel}>Juin 2026 · Saison estivale</div>
-          <div style={s.heroTitle}>Le temps des<br /><em style={s.heroTitleEm}>premières tomates</em></div>
-          <div style={s.heroDesc}>Les producteurs du Rhône commencent leur récolte. 47 restaurants lyonnais les mettent à l'honneur.</div>
-          <div style={s.heroStats}>
-            {[["47","Restaurants"],["12","Producteurs"],["28","Recettes"]].map(([n,l]) => (
-              <div key={l}><span style={s.statNum}>{n}</span><span style={s.statLabel}>{l}</span></div>
-            ))}
-          </div>
-          <div style={s.ecoBadge}>🌱 Circuit court</div>
+      {/* ── ACCUEIL ── */}
+      {activePage==="accueil" && <>
+        <div style={ss.hero}>
+          <div style={ss.heroLabel}>Juin 2026 · Tournée de Sève</div>
+          <div style={ss.heroTitle}>Produit du mois :<br/><em style={ss.heroEm}>la tomate cerise</em></div>
+          <div style={ss.heroDesc}>Récoltée hier par Michel en Drôme. En route pour Lyon ce soir.</div>
+          <button style={ss.heroCTA} onClick={()=>setActivePage("commander")}>Commander mon panier →</button>
+          <div style={ss.ecoBadge}>🚛 Tournée de Sève</div>
         </div>
 
-        {/* PRODUITS DU MOIS */}
-        <div style={s.section}>
-          <div style={s.secHeader}>
-            <div style={s.secTitle}>Produits du mois</div>
-            <span style={s.seeAll}>Voir tout →</span>
+        {/* TRACKER */}
+        {commandePassee && (
+          <div style={ss.sec}>
+            <div style={{background:`linear-gradient(135deg,${C.soil},#3d2a10)`,borderRadius:16,padding:"14px 16px"}}>
+              <div style={{fontSize:"0.62rem",color:C.gold,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}}>🚛 Ton panier est en route</div>
+              <div style={{fontFamily:"Georgia,serif",fontSize:"0.95rem",color:C.cream,lineHeight:1.4}}>Michel charge à Loriol — <strong style={{color:C.gold}}>arrivée 18h22</strong> point Carnot</div>
+              <div style={{fontSize:"0.63rem",color:"rgba(245,240,232,0.5)",marginTop:4}}>Place Carnot · 2e arr · 8 min à pied</div>
+            </div>
           </div>
-          <div style={s.produitsRow}>
-            {Object.entries(PRODUITS).map(([key, prod]) => {
-              const active = activeProduit === key;
+        )}
+
+        {/* PANIER FLASH */}
+        <div style={ss.sec}>
+          <div style={ss.secH}>
+            <div style={ss.secTitle}>⚡ Panier flash du jour</div>
+            <span style={{fontSize:"0.63rem",background:C.terracotta,color:"white",padding:"3px 8px",borderRadius:8,fontWeight:600}}>Anti-gaspi</span>
+          </div>
+          {PRODUITS_FLASH.map(p=>(
+            <div key={p.id} style={{background:`linear-gradient(135deg,${C.terracotta},#a84e22)`,borderRadius:16,padding:"14px 16px",display:"flex",alignItems:"center",gap:12,marginBottom:8}}>
+              <div style={{fontSize:"2.2rem",flexShrink:0}}>{p.emoji}</div>
+              <div style={{flex:1}}>
+                <div style={{fontFamily:"Georgia,serif",fontSize:"0.95rem",color:"white",fontWeight:700}}>{p.nom}</div>
+                <div style={{fontSize:"0.63rem",color:"rgba(255,255,255,0.65)",marginTop:2}}>{p.producteur}</div>
+                <div style={{display:"flex",alignItems:"center",gap:6,marginTop:4}}>
+                  <span style={{fontSize:"1rem",fontWeight:700,color:"white"}}>{p.prix.toFixed(2)}€</span>
+                  <span style={{fontSize:"0.63rem",color:"rgba(255,255,255,0.5)"}}>/{p.unite}</span>
+                  <span style={{fontSize:"0.7rem",color:"rgba(255,255,255,0.45)",textDecoration:"line-through"}}>{p.prixOriginal.toFixed(2)}€</span>
+                </div>
+                <div style={{fontSize:"0.6rem",color:"rgba(255,255,255,0.45)",marginTop:2}}>Plus que {p.stock} en stock</div>
+              </div>
+              <button style={{background:"white",color:C.terracotta,fontSize:"0.72rem",fontWeight:700,padding:"7px 14px",borderRadius:20,border:"none",cursor:"pointer",flexShrink:0}} onClick={()=>setActivePage("commander")}>J'en veux !</button>
+            </div>
+          ))}
+        </div>
+
+        {/* PROCHAINE TOURNÉE */}
+        <div style={ss.sec}>
+          <div style={ss.secH}>
+            <div style={ss.secTitle}>Prochaine tournée</div>
+            <span style={ss.seeAll} onClick={()=>setActivePage("carte")}>Voir la carte →</span>
+          </div>
+          {POINTS_COLLECTE.filter(p=>p.statut!=="Terminé").slice(0,2).map(pt=>(
+            <div key={pt.id} style={ss.card}>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+                <div style={{width:36,height:36,borderRadius:10,background:"#E8F4EA",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.3rem",flexShrink:0}}>🚛</div>
+                <div>
+                  <div style={{fontSize:"0.75rem",fontWeight:700,color:C.soil}}>{pt.nom} · {pt.arrdt}</div>
+                  <div style={{fontSize:"0.63rem",color:"#6B5B3E",marginTop:2}}>à {pt.distance} à pied · {pt.places} places</div>
+                </div>
+              </div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <span style={{fontSize:"0.65rem",fontWeight:700,padding:"4px 10px",borderRadius:20,background:statutColor(pt.statut),color:statutText(pt.statut)}}>{statutIcon(pt.statut)}{pt.statut}</span>
+                <div style={{textAlign:"right"}}>
+                  <div style={{fontSize:"0.85rem",fontWeight:700,color:C.soil}}>{pt.heure}</div>
+                  <div style={{fontSize:"0.63rem",color:"#6B5B3E"}}>aujourd'hui</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* SCORE ECO */}
+        <div style={{...ss.sec,paddingTop:18}}>
+          <div style={{...ss.ecoBlock}}>
+            <div style={{fontFamily:"Georgia,serif",fontSize:"1rem",color:C.cream,marginBottom:3}}>Ton impact ce mois-ci 🌱</div>
+            <div style={{fontSize:"0.68rem",color:"rgba(245,240,232,0.55)",marginBottom:14}}>Basé sur tes commandes</div>
+            {[["Local < 100km",85,"A+"],["Saisonnalité",92,"A+"],["Anti-gaspi",55,"B+"]].map(([l,p,v])=>(
+              <div key={l} style={ss.ecoBarRow}>
+                <div style={ss.ecoBarLabel}>{l}</div>
+                <div style={ss.ecoBarTrack}><div style={ss.ecoBarFill(p)}/></div>
+                <div style={ss.ecoBarVal}>{v}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={{height:20}}/>
+      </>}
+
+      {/* ── COMMANDER ── */}
+      {activePage==="commander" && <>
+        <div style={{background:C.moss,padding:"12px 18px",display:"flex",alignItems:"center",gap:10}}>
+          {commandeStep!=="selection" && commandeStep!=="suivi" && (
+            <button onClick={()=>{
+              if(commandeStep==="recap")setCommandeStep("selection");
+              else if(commandeStep==="collecte")setCommandeStep("recap");
+              else if(commandeStep==="confirmation")setCommandeStep("collecte");
+            }} style={{background:"none",border:"none",color:"white",fontSize:"1.2rem",cursor:"pointer",padding:0}}>←</button>
+          )}
+          <div style={{fontFamily:"Georgia,serif",fontSize:"1rem",color:C.cream,flex:1}}>{stepLabel[commandeStep]}</div>
+          {commandeStep==="selection" && totalItems>0 && (
+            <button onClick={()=>setCommandeStep("recap")} style={{background:C.gold,color:C.soil,fontSize:"0.72rem",fontWeight:700,padding:"6px 14px",borderRadius:20,border:"none",cursor:"pointer"}}>
+              Panier ({totalItems}) →
+            </button>
+          )}
+        </div>
+
+        {/* STEP SELECTION */}
+        {commandeStep==="selection" && <>
+          <div style={ss.sec}>
+            <div style={{fontSize:"0.7rem",color:"#6B5B3E",marginBottom:14,lineHeight:1.5}}>Produits de saison · Récoltés dans un rayon de 100 km</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+              {PRODUITS.map(p=>{
+                const qte = panier[p.id]||0;
+                return (
+                  <div key={p.id} style={{background:"white",borderRadius:16,padding:14,boxShadow:qte>0?`0 0 0 2px ${C.moss},0 4px 16px rgba(61,90,62,0.12)`:"0 2px 8px rgba(44,31,14,0.06)",position:"relative",transition:"all 0.18s"}}>
+                    {p.bio && <div style={{position:"absolute",top:8,right:8,fontSize:"0.55rem",fontWeight:700,background:"#E8F4EA",color:C.moss,padding:"2px 6px",borderRadius:8}}>🌱 Bio</div>}
+                    <div style={{fontSize:"2.5rem",textAlign:"center",marginBottom:6}}>{p.emoji}</div>
+                    <div style={{fontWeight:700,fontSize:"0.8rem",color:C.soil,marginBottom:2}}>{p.nom}</div>
+                    <div style={{fontSize:"0.6rem",color:"#6B5B3E",lineHeight:1.3,marginBottom:6}}>{p.producteur}</div>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                      <span style={{fontFamily:"Georgia,serif",fontSize:"1rem",fontWeight:700,color:C.terracotta}}>{p.prix.toFixed(2)}€</span>
+                      <span style={{fontSize:"0.57rem",color:"#6B5B3E"}}>/{p.unite}</span>
+                    </div>
+                    {qte===0 ? (
+                      <button style={{width:"100%",marginTop:8,background:C.wheat,color:C.soil,fontSize:"0.7rem",fontWeight:700,padding:"7px 0",borderRadius:10,border:"none",cursor:"pointer"}} onClick={()=>addP(p.id)}>+ Ajouter</button>
+                    ):(
+                      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:8}}>
+                        <button style={{width:28,height:28,borderRadius:8,background:C.wheat,border:"none",fontSize:"1rem",cursor:"pointer"}} onClick={()=>removeP(p.id)}>−</button>
+                        <span style={{fontWeight:700,fontSize:"0.9rem",color:C.soil}}>{qte}</span>
+                        <button style={{width:28,height:28,borderRadius:8,background:C.wheat,border:"none",fontSize:"1rem",cursor:"pointer"}} onClick={()=>addP(p.id)}>+</button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* FLASH */}
+            <div style={{...ss.secH,marginTop:20}}>
+              <div style={ss.secTitle}>⚡ Invendus du jour</div>
+              <span style={{fontSize:"0.63rem",background:C.terracotta,color:"white",padding:"3px 8px",borderRadius:8,fontWeight:600}}>-52%</span>
+            </div>
+            {PRODUITS_FLASH.map(p=>{
+              const qte=flashPanier[p.id]||0;
               return (
-                <div key={key} style={s.prodCard(active)} onClick={() => { setActiveProduit(key); setActiveTab("restos"); }}>
-                  <span style={s.prodEmoji}>{prod.emoji}</span>
-                  <span style={s.prodName(active)}>{prod.name}</span>
-                  <span style={s.prodOrigin(active)}>{prod.origin}</span>
-                  <span style={s.prodSeason(active)}>{prod.saison}</span>
+                <div key={p.id} style={{background:`linear-gradient(135deg,${C.terracotta},#a84e22)`,borderRadius:16,padding:"14px 16px",display:"flex",alignItems:"center",gap:12,marginBottom:8}}>
+                  <div style={{fontSize:"2rem",flexShrink:0}}>{p.emoji}</div>
+                  <div style={{flex:1}}>
+                    <div style={{fontFamily:"Georgia,serif",fontSize:"0.9rem",color:"white",fontWeight:700}}>{p.nom}</div>
+                    <div style={{display:"flex",alignItems:"center",gap:6,marginTop:4}}>
+                      <span style={{fontSize:"0.95rem",fontWeight:700,color:"white"}}>{p.prix.toFixed(2)}€/{p.unite}</span>
+                      <span style={{fontSize:"0.68rem",color:"rgba(255,255,255,0.45)",textDecoration:"line-through"}}>{p.prixOriginal.toFixed(2)}€</span>
+                    </div>
+                  </div>
+                  {qte===0 ? (
+                    <button style={{background:"white",color:C.terracotta,fontSize:"0.7rem",fontWeight:700,padding:"7px 12px",borderRadius:20,border:"none",cursor:"pointer",flexShrink:0}} onClick={()=>addF(p.id)}>Ajouter</button>
+                  ):(
+                    <div style={{display:"flex",gap:6,alignItems:"center",flexShrink:0}}>
+                      <button style={{width:26,height:26,borderRadius:8,background:"rgba(255,255,255,0.2)",border:"none",color:"white",cursor:"pointer"}} onClick={()=>removeF(p.id)}>−</button>
+                      <span style={{fontWeight:700,color:"white"}}>{qte}</span>
+                      <button style={{width:26,height:26,borderRadius:8,background:"rgba(255,255,255,0.2)",border:"none",color:"white",cursor:"pointer"}} onClick={()=>addF(p.id)}>+</button>
+                    </div>
+                  )}
                 </div>
               );
             })}
           </div>
-        </div>
+          {totalItems>0 && (
+            <div style={{padding:"16px 18px"}}>
+              <button style={ss.ctaBtn(false)} onClick={()=>setCommandeStep("recap")}>Voir mon panier · {totalPrix.toFixed(2)} € →</button>
+            </div>
+          )}
+        </>}
 
-        {/* DETAIL PANEL */}
-        <div style={s.panel}>
-          <div style={s.panelHero}>
-            <div style={s.panelEmoji}>{p.emoji}</div>
-            <div>
-              <div style={s.panelName}>{p.name}</div>
-              <div style={s.panelSub}>{p.sub}</div>
-              <div style={s.panelEco}>🌱 {p.eco}</div>
+        {/* STEP RECAP */}
+        {commandeStep==="recap" && <>
+          <div style={{padding:"18px 0 0"}}>
+            <div style={{background:"white",borderRadius:18,margin:"0 18px",padding:16,boxShadow:"0 4px 20px rgba(44,31,14,0.08)"}}>
+              <div style={{fontFamily:"Georgia,serif",fontSize:"0.95rem",color:C.soil,marginBottom:12}}>Mon panier</div>
+              {[...produitsEnPanier.map(p=>({...p,qte:panier[p.id]})),
+                ...flashEnPanier.map(p=>({...p,qte:flashPanier[p.id],flash:true}))
+              ].map((p,i,arr)=>(
+                <div key={p.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:i<arr.length-1?`1px solid ${C.wheat}`:"none"}}>
+                  <div style={{fontSize:"1.5rem",width:36,textAlign:"center"}}>{p.emoji}</div>
+                  <div style={{flex:1}}>
+                    <div style={{fontWeight:600,fontSize:"0.78rem",color:C.soil}}>{p.nom}</div>
+                    <div style={{fontSize:"0.6rem",color:"#6B5B3E"}}>× {p.qte} {p.unite}{p.flash?" · ⚡ Flash":""}</div>
+                  </div>
+                  <div style={{fontSize:"0.75rem",fontWeight:700,color:C.terracotta}}>{(p.prix*p.qte).toFixed(2)} €</div>
+                  <button onClick={()=>p.flash?removeF(p.id):removeP(p.id)} style={{background:"none",border:"none",color:"#ccc",fontSize:"1rem",cursor:"pointer",marginLeft:4}}>✕</button>
+                </div>
+              ))}
+              <div style={{borderTop:`1px solid ${C.wheat}`,paddingTop:12,marginTop:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <span style={{fontSize:"0.78rem",color:"#6B5B3E"}}>Total</span>
+                <span style={{fontFamily:"Georgia,serif",fontSize:"1.3rem",fontWeight:700,color:C.soil}}>{totalPrix.toFixed(2)} €</span>
+              </div>
+              <div style={{fontSize:"0.62rem",color:"#6B5B3E",textAlign:"right",marginTop:4}}>Livraison incluse · Circuit court &lt; 100 km</div>
+            </div>
+            <div style={{padding:"14px 18px 0"}}>
+              <button style={ss.ctaBtn(false)} onClick={()=>setCommandeStep("collecte")}>Choisir mon point de collecte →</button>
+              <button style={ss.ctaSec} onClick={()=>setCommandeStep("selection")}>Modifier mon panier</button>
             </div>
           </div>
-          <div style={s.tabs}>
-            {[["restos","🍽 Restos"],["recettes","👨‍🍳 Recettes"],["adresses","🏪 Adresses"],["producteurs","👨‍🌾 Producteurs"]].map(([id,label]) => (
-              <div key={id} style={s.tab(activeTab===id)} onClick={() => setActiveTab(id)}>{label}</div>
+        </>}
+
+        {/* STEP COLLECTE */}
+        {commandeStep==="collecte" && <>
+          <div style={ss.sec}>
+            <div style={{fontSize:"0.72rem",color:"#6B5B3E",marginBottom:16,lineHeight:1.5}}>Choisis un point de collecte et récupère ton panier lors du passage de la tournée.</div>
+            {POINTS_COLLECTE.map(pt=>{
+              const sel=selectedPoint===pt.id;
+              const disabled=pt.statut==="Terminé";
+              return (
+                <div key={pt.id}
+                  onClick={()=>!disabled&&setSelectedPoint(pt.id)}
+                  style={{background:sel?`linear-gradient(135deg,${C.moss},#2a3d2b)`:"white",borderRadius:14,padding:"14px 16px",marginBottom:10,boxShadow:"0 2px 8px rgba(44,31,14,0.06)",cursor:disabled?"not-allowed":"pointer",border:`2px solid ${sel?C.moss:"transparent"}`,opacity:disabled?0.5:1,transition:"all 0.18s"}}
+                >
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                    <div>
+                      <div style={{fontWeight:700,fontSize:"0.85rem",color:sel?C.cream:C.soil}}>{pt.nom}</div>
+                      <div style={{fontSize:"0.63rem",color:sel?"rgba(245,240,232,0.6)":"#6B5B3E",marginTop:2}}>{pt.arrdt} arr. · {pt.distance} à pied</div>
+                    </div>
+                    {sel && <span style={{fontSize:"1.2rem",color:C.gold}}>✓</span>}
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:8}}>
+                    <span style={{fontSize:"0.63rem",fontWeight:700,padding:"3px 9px",borderRadius:20,background:sel?"rgba(255,255,255,0.15)":statutColor(pt.statut),color:sel?C.cream:statutText(pt.statut)}}>{statutIcon(pt.statut)}{pt.statut}</span>
+                    <span style={{fontSize:"0.8rem",fontWeight:700,color:sel?C.gold:C.soil}}>{pt.heure}</span>
+                  </div>
+                  <div style={{fontSize:"0.6rem",color:sel?"rgba(245,240,232,0.5)":"#6B5B3E",marginTop:4}}>{pt.places>0?`${pt.places} places restantes`:"Complet pour aujourd'hui"}</div>
+                </div>
+              );
+            })}
+            <button style={ss.ctaBtn(!selectedPoint)} disabled={!selectedPoint} onClick={()=>setCommandeStep("confirmation")}>Confirmer ce point →</button>
+          </div>
+        </>}
+
+        {/* STEP CONFIRMATION */}
+        {commandeStep==="confirmation" && selectedPoint && <>
+          <div style={{padding:"20px 0 0"}}>
+            <div style={{background:`linear-gradient(135deg,${C.moss},#2a3d2b)`,borderRadius:20,margin:"0 18px",padding:"24px 20px",textAlign:"center"}}>
+              <span style={{fontSize:"3rem",display:"block",marginBottom:12}}>✅</span>
+              <div style={{fontFamily:"Georgia,serif",fontSize:"1.4rem",color:C.cream,marginBottom:8}}>Prêt à commander !</div>
+              <div style={{fontSize:"0.72rem",color:"rgba(245,240,232,0.65)",lineHeight:1.5}}>Vérifie les détails et confirme ta commande.</div>
+              <div style={{marginTop:16,background:"rgba(255,255,255,0.1)",borderRadius:12,padding:"12px 16px",textAlign:"left"}}>
+                {[["Produits",`${totalItems} article${totalItems>1?"s":""}`],
+                  ["Montant",`${totalPrix.toFixed(2)} €`],
+                  ["Point de collecte",POINTS_COLLECTE.find(p=>p.id===selectedPoint)?.nom],
+                  ["Heure de passage",POINTS_COLLECTE.find(p=>p.id===selectedPoint)?.heure],
+                ].map(([l,v])=>(
+                  <div key={l} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
+                    <span style={{fontSize:"0.68rem",color:"rgba(245,240,232,0.6)"}}>{l}</span>
+                    <span style={{fontSize:"0.68rem",fontWeight:700,color:C.cream}}>{v}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={{padding:"16px 18px"}}>
+              <button style={ss.ctaBtn(false)} onClick={passerCommande}>🌿 Commander maintenant</button>
+              <div style={{fontSize:"0.62rem",color:"#6B5B3E",textAlign:"center",marginTop:10,lineHeight:1.5}}>Paiement à la livraison · Annulation gratuite jusqu'à 2h avant</div>
+            </div>
+          </div>
+        </>}
+
+        {/* STEP SUIVI */}
+        {commandeStep==="suivi" && <>
+          <div style={{padding:"20px 0 0"}}>
+            <div style={{background:`linear-gradient(135deg,${C.moss},#2a3d2b)`,borderRadius:20,margin:"0 18px",padding:"24px 20px",textAlign:"center"}}>
+              <span style={{fontSize:"3rem",display:"block",marginBottom:12}}>🚛</span>
+              <div style={{fontFamily:"Georgia,serif",fontSize:"1.4rem",color:C.cream,marginBottom:8}}>Commande confirmée !</div>
+              <div style={{fontSize:"0.72rem",color:"rgba(245,240,232,0.65)",lineHeight:1.5}}>Michel charge à Loriol · arrivée prévue 18h22</div>
+            </div>
+            <div style={ss.sec}>
+              <div style={{...ss.secTitle,marginBottom:16}}>Suivi de ta tournée</div>
+              <div style={ss.card}>
+                {[{label:"Commande reçue",sub:"Aujourd'hui à 14h32",done:true,active:false},
+                  {label:"En préparation",sub:"Michel — Ferme des Collines · Drôme",done:true,active:false},
+                  {label:"En route",sub:"Arrivée à 18h22 · Place Carnot",done:false,active:true},
+                  {label:"Prêt à récupérer",sub:"Place Carnot · 2e arr",done:false,active:false},
+                ].map((step,i)=>(
+                  <div key={i} style={{display:"flex",gap:12,alignItems:"flex-start",opacity:step.done||step.active?1:0.4,marginBottom:i<3?16:0}}>
+                    <div style={{width:28,height:28,borderRadius:"50%",background:step.done?C.moss:step.active?C.gold:C.wheat,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.7rem",flexShrink:0,color:step.done||step.active?"white":"#999"}}>{step.done?"✓":step.active?"→":i+1}</div>
+                    <div>
+                      <div style={{fontSize:"0.78rem",fontWeight:step.active||step.done?700:500,color:step.active||step.done?C.soil:"#6B5B3E"}}>{step.label}</div>
+                      <div style={{fontSize:"0.63rem",color:"#6B5B3E",marginTop:2}}>{step.sub}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <button style={{...ss.ctaBtn(false),marginTop:14}} onClick={()=>{setPanier({});setFlashPanier({});setCommandeStep("selection");setSelectedPoint(null);setCommandePassee(false)}}>Nouvelle commande</button>
+            </div>
+          </div>
+        </>}
+        <div style={{height:20}}/>
+      </>}
+
+      {/* ── RECETTES ── */}
+      {activePage==="recettes" && <>
+        <div style={ss.hero}>
+          <div style={ss.heroLabel}>Recettes de saison</div>
+          <div style={ss.heroTitle}>Cuisiner <em style={ss.heroEm}>ce que tu as commandé</em></div>
+          <div style={ss.heroDesc}>{totalItems>0?`${recettesSuggerees.length} recette${recettesSuggerees.length>1?"s":""} avec ton panier`:"Des recettes pour chaque produit de saison"}</div>
+        </div>
+        <div style={ss.sec}>
+          <div style={ss.pillRow}>
+            {["Toutes","Mon panier","Rapide","Facile","Végé"].map(f=>(
+              <span key={f} style={{...ss.pill(recetteFilter===f),
+                ...(f==="Mon panier"&&totalItems>0?{background:C.terracotta,color:"white",border:`1.5px solid ${C.terracotta}`}:{})
+              }} onClick={()=>setRecetteFilter(f)}>
+                {f}{f==="Mon panier"&&totalItems>0?` (${recettesSuggerees.length})`:""}
+              </span>
             ))}
           </div>
-          <div style={s.tabContent}>
-            {activeTab === "restos" && <>
-              <div style={s.pillRow}>{restoPills.map(f => <span key={f} style={s.pill(restoFilter===f)} onClick={() => setRestoFilter(f)}>{f}</span>)}</div>
-              {RESTOS.map((r,i) => (
-                <div key={i} style={{ ...s.restoItem, borderBottom: i<RESTOS.length-1?"1px solid #E8D9B5":"none" }}>
-                  <div style={s.restoAvatar(r.bg)}>{r.emoji}</div>
-                  <div style={{ flex:1 }}>
-                    <div style={s.restoName}>{r.name}</div>
-                    <div style={s.restoMeta}>{r.type}</div>
-                    <div style={s.restoTags}>{r.tags.map(t => <span key={t.label} style={s.tag(t.cls)}>{t.label}</span>)}</div>
+          {recettesFiltrees.length===0 && (
+            <div style={{textAlign:"center",padding:"30px 0",color:"#6B5B3E",fontSize:"0.78rem"}}>Ajoute des produits à ton panier pour voir les recettes suggérées 🛒</div>
+          )}
+          {recettesFiltrees.map(r=>{
+            const produitsR = PRODUITS.filter(p=>r.produits.includes(p.id));
+            const manquants = produitsR.filter(p=>!panier[p.id]);
+            return (
+              <div key={r.id} style={{background:r.bg||"white",borderRadius:16,padding:14,marginBottom:10,boxShadow:"0 2px 8px rgba(44,31,14,0.06)",display:"flex",gap:12,alignItems:"flex-start"}}>
+                <div style={{fontSize:"2.2rem",width:52,height:52,background:"rgba(255,255,255,0.5)",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{r.emoji}</div>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:700,fontSize:"0.82rem",color:C.soil,marginBottom:3}}>{r.nom}</div>
+                  <div style={{fontSize:"0.63rem",color:"#6B5B3E"}}>⏱ {r.temps} min · {r.veggie?"Végé":"Omnivore"}</div>
+                  <div style={{display:"flex",gap:3,marginTop:6}}>
+                    {[1,2,3].map(d=><div key={d} style={{width:6,height:6,borderRadius:"50%",background:d<=r.diff?C.terracotta:C.wheat}}/>)}
                   </div>
-                  <div style={s.restoRight}>
-                    <div style={s.restoDist}>{r.dist}</div>
-                    <div style={s.restoPrice}>{r.price}</div>
-                    <button style={s.resaBtn}>Réserver</button>
+                  <div style={{display:"flex",gap:5,flexWrap:"wrap",marginTop:6}}>
+                    {produitsR.map(p=>(
+                      <span key={p.id} style={{fontSize:"0.55rem",fontWeight:700,padding:"2px 6px",borderRadius:8,background:panier[p.id]?"#E8F4EA":"#FEF3E8",color:C.moss}}>{p.emoji} {p.nom}</span>
+                    ))}
                   </div>
+                  {manquants.length>0 && (
+                    <button style={{marginTop:8,background:C.wheat,color:C.soil,fontSize:"0.63rem",fontWeight:600,padding:"5px 10px",borderRadius:8,border:"none",cursor:"pointer"}}
+                      onClick={()=>{ manquants.forEach(p=>addP(p.id)); setActivePage("commander"); }}>
+                      + Ajouter {manquants.length} ingrédient{manquants.length>1?"s":""} manquant{manquants.length>1?"s":""}
+                    </button>
+                  )}
                 </div>
-              ))}
-            </>}
-            {activeTab === "recettes" && <>
-              <div style={s.pillRow}>{recPills.map(f => <span key={f} style={s.pill(recetteFilter===f)} onClick={() => setRecetteFilter(f)}>{f}</span>)}</div>
-              {RECETTES.map((r,i) => (
-                <div key={i} style={{ ...s.recItem, borderBottom: i<RECETTES.length-1?"1px solid #E8D9B5":"none" }}>
-                  <div style={s.recImg(r.bg)}>{r.emoji}</div>
-                  <div style={{ flex:1 }}>
-                    <div style={s.recName}>{r.name}</div>
-                    <div style={s.recMeta}>{r.meta}</div>
-                    <div style={s.diffRow}>{[1,2,3].map(d => <div key={d} style={s.dot(d<=r.diff)} />)}</div>
-                  </div>
+              </div>
+            );
+          })}
+        </div>
+        <div style={{height:20}}/>
+      </>}
+
+      {/* ── CARTE ── */}
+      {activePage==="carte" && <>
+        <div style={ss.hero}>
+          <div style={ss.heroLabel}>Tournée de Sève</div>
+          <div style={ss.heroTitle}>Points de <em style={ss.heroEm}>collecte</em></div>
+          <div style={ss.heroDesc}>Récupère ton panier à 10 min à pied · Passage aujourd'hui</div>
+          <div style={ss.ecoBadge}>🗺️ Lyon</div>
+        </div>
+
+        {/* CARTE ILLUSTRÉE */}
+        <div style={{padding:"18px 18px 0"}}>
+          <div style={{background:"#e8f0e4",borderRadius:16,height:200,position:"relative",overflow:"hidden",border:`1px solid ${C.wheat}`}}>
+            <svg width="100%" height="100%" style={{position:"absolute",inset:0}}>
+              <rect width="100%" height="100%" fill="#e8f0e4"/>
+              <line x1="40%" y1="0" x2="40%" y2="100%" stroke="#ccc" strokeWidth="2"/>
+              <line x1="70%" y1="0" x2="70%" y2="100%" stroke="#ccc" strokeWidth="2"/>
+              <line x1="0" y1="35%" x2="100%" y2="35%" stroke="#ccc" strokeWidth="2"/>
+              <line x1="0" y1="65%" x2="100%" y2="65%" stroke="#ccc" strokeWidth="2"/>
+              <rect x="40%" y="35%" width="30%" height="30%" fill="#d4e8d0" rx="4"/>
+              <text x="55%" y="52%" textAnchor="middle" fontSize="9" fill="#6B5B3E">Presqu'île</text>
+            </svg>
+            {[{x:"44%",y:"55%"},{x:"54%",y:"28%"},{x:"36%",y:"20%"},{x:"60%",y:"78%"}].map((pos,i)=>{
+              const pt=POINTS_COLLECTE[i];
+              return (
+                <div key={pt.id} style={{position:"absolute",left:pos.x,top:pos.y,transform:"translate(-50%,-50%)",width:32,height:32,borderRadius:"50%",background:pt.statut==="En route"?C.gold:pt.statut==="Disponible"?C.moss:"#bbb",border:"3px solid white",boxShadow:"0 2px 8px rgba(0,0,0,0.2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.85rem"}}>
+                  {pt.statut==="En route"?"🚛":pt.statut==="Disponible"?"✅":"❌"}
                 </div>
-              ))}
-            </>}
-            {activeTab === "adresses" && <>
-              <div style={s.pillRow}>{adrPills.map(f => <span key={f} style={s.pill(adresseFilter===f)} onClick={() => setAdresseFilter(f)}>{f}</span>)}</div>
-              {ADRESSES.map((a,i) => (
-                <div key={i} style={{ ...s.adrItem, borderBottom: i<ADRESSES.length-1?"1px solid #E8D9B5":"none" }}>
-                  <div style={s.adrIcon}>{a.icon}</div>
-                  <div>
-                    <div style={s.adrName}>{a.name}</div>
-                    <div style={s.adrType}>{a.type}</div>
-                    <div style={s.adrRue}>{a.rue}</div>
-                    <div style={s.adrHoraires}>{a.horaires}</div>
-                  </div>
-                </div>
-              ))}
-            </>}
-            {activeTab === "producteurs" && <>
-              {PRODUCTEURS.map((pr,i) => (
-                <div key={i} style={{ ...s.adrItem, borderBottom: i<PRODUCTEURS.length-1?"1px solid #E8D9B5":"none" }}>
-                  <div style={{ ...s.restoAvatar(pr.bg), fontSize:"1.6rem" }}>{pr.emoji}</div>
-                  <div style={{ flex:1 }}>
-                    <div style={s.restoName}>{pr.name}</div>
-                    <div style={s.restoMeta}>{pr.lieu} · {pr.type}</div>
-                    <div style={{ fontSize:"0.6rem", color:"#3D5A3E", marginTop:3, fontWeight:600 }}>{pr.produits}</div>
-                  </div>
-                  <div style={s.restoRight}>
-                    <div style={{ fontSize:"0.7rem", fontWeight:700, color:"#D4A843" }}>⭐ {pr.note}</div>
-                    <div style={s.restoDist}>{pr.nbAvis} avis</div>
-                    <button style={s.resaBtn}>Contacter</button>
-                  </div>
-                </div>
-              ))}
-            </>}
+              );
+            })}
+            <div style={{position:"absolute",bottom:8,left:10,background:"white",borderRadius:8,padding:"3px 8px",fontSize:"0.58rem",color:"#6B5B3E",boxShadow:"0 1px 4px rgba(0,0,0,0.1)"}}>Lyon · Tournée de Sève</div>
+          </div>
+          <div style={{display:"flex",gap:14,marginTop:8,paddingLeft:2}}>
+            {[["🚛","En route",C.gold],["✅","Disponible",C.moss],["❌","Terminé","#bbb"]].map(([icon,label,color])=>(
+              <div key={label} style={{display:"flex",alignItems:"center",gap:4}}>
+                <div style={{width:10,height:10,borderRadius:"50%",background:color}}/>
+                <span style={{fontSize:"0.6rem",color:"#6B5B3E"}}>{label}</span>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* TRENDING */}
-        <div style={s.divider} />
-        <div style={{ ...s.section, paddingTop:18 }}>
-          <div style={s.secHeader}>
-            <div style={s.secTitle}>Tendances à Lyon</div>
-            <span style={s.seeAll}>Explorer →</span>
-          </div>
-          <div style={s.trendGrid}>
-            <div style={{ ...s.trendCard(true), gridRow:"span 2" }}>
-              <div style={s.trendEmoji}>🍷</div>
-              <div style={s.trendLabel(true)}>Saison prochaine</div>
-              <div style={s.trendName(true)}>Beaujolais nouveau 2026</div>
-              <div style={s.trendSub(true)}>Dans 4 mois · 38 caves partenaires</div>
-            </div>
-            <div style={s.trendCard(false)}>
-              <div style={s.trendEmoji}>🧀</div>
-              <div style={s.trendLabel(false)}>En ce moment</div>
-              <div style={s.trendName(false)}>St-Marcellin au pic</div>
-              <div style={s.trendSub(false)}>Affinage parfait ce mois</div>
-            </div>
-            <div style={s.trendCard(false)}>
-              <div style={s.trendEmoji}>🍑</div>
-              <div style={s.trendLabel(false)}>Bientôt</div>
-              <div style={s.trendName(false)}>Pêches d'Ardèche</div>
-              <div style={s.trendSub(false)}>Ouverture récolte le 20 juin</div>
-            </div>
-          </div>
-        </div>
-
-        {/* ECO SCORE */}
-        <div style={s.ecoBlock}>
-          <div style={s.ecoTitle}>Ton impact ce mois-ci 🌱</div>
-          <div style={s.ecoSub}>Basé sur tes visites et achats déclarés</div>
-          {[["Km parcourus",85,"A+"],["Local < 100km",70,"A"],["Saisonnalité",92,"A+"],["Anti-gaspi",55,"B+"]].map(([label,pct,val]) => (
-            <div key={label} style={s.ecoBarRow}>
-              <div style={s.ecoBarLabel}>{label}</div>
-              <div style={s.ecoBarTrack}><div style={s.ecoBarFill(pct)} /></div>
-              <div style={s.ecoBarVal}>{val}</div>
+        {/* LISTE POINTS */}
+        <div style={{padding:"16px 18px 0"}}>
+          {POINTS_COLLECTE.map(pt=>(
+            <div key={pt.id} style={{background:"white",borderRadius:14,padding:"12px 14px",marginBottom:10,boxShadow:"0 2px 8px rgba(44,31,14,0.06)",borderLeft:`4px solid ${pt.statut==="En route"?C.gold:pt.statut==="Disponible"?C.moss:"#ccc"}`}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:700,fontSize:"0.82rem",color:C.soil}}>{pt.nom} · {pt.arrdt}</div>
+                  <div style={{display:"flex",gap:8,marginTop:4,alignItems:"center",flexWrap:"wrap"}}>
+                    <span style={{fontSize:"0.62rem",fontWeight:700,padding:"3px 8px",borderRadius:20,background:statutColor(pt.statut),color:statutText(pt.statut)}}>{statutIcon(pt.statut)}{pt.statut}</span>
+                    <span style={{fontSize:"0.62rem",color:"#6B5B3E"}}>📍 {pt.distance} à pied</span>
+                    <span style={{fontSize:"0.62rem",color:"#6B5B3E"}}>🕐 {pt.heure}</span>
+                  </div>
+                  <div style={{fontSize:"0.6rem",color:"#6B5B3E",marginTop:4}}>{pt.places>0?`${pt.places} places restantes`:"Complet"}</div>
+                </div>
+                {pt.statut!=="Terminé" && (
+                  <button onClick={()=>{ setSelectedPoint(pt.id); setActivePage("commander"); setCommandeStep(totalItems>0?"collecte":"selection"); }}
+                    style={{background:C.moss,color:"white",fontSize:"0.65rem",fontWeight:700,padding:"6px 12px",borderRadius:10,border:"none",cursor:"pointer",flexShrink:0,marginLeft:10}}>
+                    Choisir
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>
-        <div style={{ height:20 }} />
+        <div style={{height:20}}/>
       </>}
 
-      {/* PAGE CALENDRIER */}
-      {activePage === "carte" && <>
-        <div style={s.hero}>
-          <div style={s.heroLabel}>Calendrier des saisons</div>
-          <div style={s.heroTitle}>Manger <em style={s.heroTitleEm}>vraiment</em> local</div>
-          <div style={s.heroDesc}>Sélectionne un mois pour voir ce qui est vraiment de saison — et éviter les faux "produits locaux".</div>
-          <div style={s.ecoBadge}>🛡 Anti-greenwashing</div>
+      {/* ── PROFIL ── */}
+      {activePage==="profil" && <>
+        <div style={{background:`linear-gradient(135deg,${C.soil},#3d2a10)`,padding:"24px 18px",textAlign:"center"}}>
+          <span style={{fontSize:"3.5rem",display:"block"}}>👤</span>
+          <div style={{fontFamily:"Georgia,serif",fontSize:"1.2rem",color:C.cream,marginTop:8}}>Mon profil</div>
+          <div style={{fontSize:"0.68rem",color:"rgba(245,240,232,0.55)",marginTop:4}}>Consommateur local · Lyon · Membre depuis mai 2026</div>
+          <div style={{display:"inline-block",background:C.moss,color:C.gold,fontFamily:"Georgia,serif",fontSize:"1.05rem",fontWeight:700,padding:"6px 18px",borderRadius:20,marginTop:12}}>🌿 980 pts · Rang #2</div>
         </div>
 
-        <div style={s.section}>
-          <div style={s.calStrip}>
-            {MOIS.map((m,i) => (
-              <div key={i} style={s.calMois(activeMois===i)} onClick={() => setActiveMois(i)}>
-                <span style={s.calMoisLabel(activeMois===i)}>{m}</span>
-                <div style={s.calMoisDot(activeMois===i)} />
+        <div style={ss.sec}>
+          <div style={ss.secTitle}>Mon impact éco</div>
+          <div style={{...ss.ecoBlock,marginTop:12}}>
+            <div style={{fontSize:"0.68rem",color:"rgba(245,240,232,0.55)",marginBottom:14}}>Basé sur tes commandes Racines</div>
+            {[["Local < 100km",85,"A+"],["Saisonnalité",92,"A+"],["Anti-gaspi",55,"B+"],["Km économisés",70,"A"]].map(([l,p,v])=>(
+              <div key={l} style={ss.ecoBarRow}>
+                <div style={ss.ecoBarLabel}>{l}</div>
+                <div style={ss.ecoBarTrack}><div style={ss.ecoBarFill(p)}/></div>
+                <div style={ss.ecoBarVal}>{v}</div>
               </div>
             ))}
           </div>
-
-          <div style={{ marginTop:18 }}>
-            <div style={s.secHeader}>
-              <div style={s.secTitle}>Produits de {MOIS[activeMois]}</div>
-              <span style={{ fontSize:"0.63rem", background:"#3D5A3E", color:"white", padding:"3px 8px", borderRadius:8, fontWeight:600 }}>✓ Certifié saison</span>
-            </div>
-            <div style={s.calProdGrid}>
-              {CALENDRIER[activeMois].map((prod,i) => (
-                <div key={i} style={s.calProdItem}>
-                  <span style={{ fontSize:"1.3rem" }}>{prod.split(" ")[0]}</span>
-                  <span style={s.calProdText}>{prod.split(" ").slice(1).join(" ")}</span>
-                </div>
-              ))}
-            </div>
-            <div style={s.calWarning}>
-              ⚠️ <strong>Méfie-toi des étiquettes "local"</strong> — un produit hors saison cultivé sous serre chauffée n'est pas éco-responsable, même s'il vient de France.
-            </div>
-          </div>
-
-          <div style={{ marginTop:18 }}>
-            <div style={s.secTitle}>Producteurs qui livrent en {MOIS[activeMois]}</div>
-            <div style={{ marginTop:12 }}>
-              {PRODUCTEURS.map((pr,i) => (
-                <div key={i} style={s.prodCard2}>
-                  <div style={s.prodHeader(pr.bg)}>
-                    <div style={s.prodAva}>{pr.emoji}</div>
-                    <div style={{ flex:1 }}>
-                      <div style={s.prodPName}>{pr.name}</div>
-                      <div style={s.prodPLieu}>📍 {pr.lieu}</div>
-                      <span style={s.prodCertif}>{pr.certif}</span>
-                    </div>
-                    <div style={s.prodNote}>
-                      <span style={s.prodNoteNum}>⭐ {pr.note}</span>
-                      <span style={s.prodNoteAvis}>{pr.nbAvis} avis</span>
-                    </div>
-                  </div>
-                  <div style={s.prodBody}>
-                    <div style={s.prodPRow}>
-                      <span style={s.prodPLabel}>Produits</span>
-                      <span style={s.prodPVal}>{pr.produits}</span>
-                    </div>
-                    <div style={s.prodPRow}>
-                      <span style={s.prodPLabel}>Disponibilité</span>
-                      <span style={{ ...s.prodPVal, color:"#3D5A3E" }}>{pr.dispo}</span>
-                    </div>
-                    <button style={s.contactBtn}>📩 Contacter le producteur</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
-        <div style={{ height:20 }} />
-      </>}
 
-      {/* PAGE RECETTES */}
-      {activePage === "recettes" && <>
-        <div style={s.hero}>
-          <div style={s.heroLabel}>Recettes de saison</div>
-          <div style={s.heroTitle}>Cuisiner <em style={s.heroTitleEm}>ce que la terre donne</em></div>
-          <div style={s.heroDesc}>Des idées simples et savoureuses avec les produits du moment.</div>
-        </div>
-        <div style={s.section}>
-          <div style={s.pillRow}>{recPills.map(f => <span key={f} style={s.pill(recetteFilter===f)} onClick={() => setRecetteFilter(f)}>{f}</span>)}</div>
-          {RECETTES.map((r,i) => (
-            <div key={i} style={{ ...s.recItem, borderBottom: i<RECETTES.length-1?"1px solid #E8D9B5":"none" }}>
-              <div style={s.recImg(r.bg)}>{r.emoji}</div>
-              <div style={{ flex:1 }}>
-                <div style={s.recName}>{r.name}</div>
-                <div style={s.recMeta}>{r.meta}</div>
-                <div style={s.diffRow}>{[1,2,3].map(d => <div key={d} style={s.dot(d<=r.diff)} />)}</div>
+        <div style={{...ss.sec,paddingTop:18}}>
+          <div style={ss.secH}>
+            <div style={ss.secTitle}>Mes badges</div>
+            <span style={ss.seeAll}>{BADGES.filter(b=>b.debloque).length}/{BADGES.length} débloqués</span>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginTop:12}}>
+            {BADGES.map(b=>(
+              <div key={b.id} style={{background:b.debloque?"white":"#F5F2EE",borderRadius:14,padding:"14px 8px",textAlign:"center",boxShadow:b.debloque?"0 2px 8px rgba(44,31,14,0.07)":"none",opacity:b.debloque?1:0.6}}>
+                <span style={{fontSize:"2rem",display:"block",filter:b.debloque?"none":"grayscale(1)"}}>{b.emoji}</span>
+                <span style={{fontSize:"0.68rem",fontWeight:700,color:C.soil,marginTop:6,display:"block"}}>{b.nom}</span>
+                <span style={{fontSize:"0.57rem",color:"#6B5B3E",marginTop:3,lineHeight:1.3,display:"block"}}>{b.desc}</span>
+                {!b.debloque && <span style={{fontSize:"0.65rem",display:"block",marginTop:4,color:"#aaa"}}>🔒</span>}
               </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{...ss.sec,paddingTop:18}}>
+          <div style={ss.secH}>
+            <div style={ss.secTitle}>Classement amis · Juin</div>
+            <span style={ss.seeAll}>Inviter →</span>
+          </div>
+          {AMIS.map(a=>(
+            <div key={a.nom} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:a.moi?`linear-gradient(135deg,${C.moss},#2d4a2e)`:"white",borderRadius:14,marginBottom:8,boxShadow:"0 2px 8px rgba(44,31,14,0.06)"}}>
+              <span style={{fontFamily:"Georgia,serif",fontSize:"1rem",fontWeight:700,color:a.moi?C.gold:C.soil,width:22,textAlign:"center"}}>{a.emoji}</span>
+              <span style={{fontSize:"1.4rem",flexShrink:0}}>👤</span>
+              <span style={{fontWeight:700,fontSize:"0.8rem",color:a.moi?C.cream:C.soil,flex:1}}>{a.nom}{a.moi?" (moi)":""}</span>
+              <span style={{fontSize:"0.72rem",fontWeight:700,color:a.moi?C.sage:C.moss}}>{a.score} pts</span>
             </div>
           ))}
         </div>
-        <div style={{ height:20 }} />
-      </>}
 
-      {/* PAGE CLASSEMENT */}
-      {activePage === "adresses" && <>
-        <div style={s.hero}>
-          <div style={s.heroLabel}>Classement entre amis</div>
-          <div style={s.heroTitle}>Qui est le plus <em style={s.heroTitleEm}>éco-friendly ?</em></div>
-          <div style={s.heroDesc}>Gagne des points en consommant local et de saison. Défie tes amis !</div>
-          <div style={s.ecoBadge}>🏆 Juin 2026</div>
-        </div>
-
-        <div style={s.section}>
-          <div style={s.secHeader}>
-            <div style={s.secTitle}>Tes badges</div>
-            <span style={s.seeAll}>{BADGES.filter(b=>b.unlocked).length}/{BADGES.length} débloqués</span>
+        <div style={{...ss.sec,paddingTop:18}}>
+          <div style={ss.secH}>
+            <div style={ss.secTitle}>Historique commandes</div>
           </div>
-          <div style={s.badgeGrid}>
-            {BADGES.map((b,i) => (
-              <div key={i} style={s.badgeCard(b.unlocked)}>
-                <span style={s.badgeEmoji(b.unlocked)}>{b.emoji}</span>
-                <span style={s.badgeName}>{b.name}</span>
-                <span style={s.badgeDesc}>{b.desc}</span>
-                {!b.unlocked && <span style={s.badgeLock}>🔒</span>}
+          {[{date:"8 juin 2026",items:"Tomates cerise, Courgettes, Basilic",total:"7.10 €"},
+            {date:"1 juin 2026",items:"Pêches, Saint-Marcellin",total:"5.60 €"},
+            {date:"25 mai 2026",items:"Courgettes × 3, Salade verte",total:"5.50 €"},
+          ].map((h,i)=>(
+            <div key={i} style={{background:"white",borderRadius:14,padding:"12px 14px",marginBottom:10,boxShadow:"0 2px 8px rgba(44,31,14,0.06)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div>
+                <div style={{fontSize:"0.63rem",color:"#6B5B3E"}}>{h.date}</div>
+                <div style={{fontSize:"0.82rem",fontWeight:700,color:C.soil,marginTop:2}}>{h.items}</div>
+                <div style={{fontSize:"0.68rem",fontWeight:700,color:C.terracotta,marginTop:2}}>{h.total}</div>
               </div>
-            ))}
-          </div>
-        </div>
-
-        <div style={{ ...s.section, paddingTop:18 }}>
-          <div style={s.secHeader}>
-            <div style={s.secTitle}>Classement · Juin</div>
-            <span style={s.seeAll}>Inviter →</span>
-          </div>
-          {AMIS.map((a,i) => (
-            <div key={i} style={s.boardItem(a.isMe)}>
-              <span style={s.boardRank(a.isMe)}>{a.rank}</span>
-              <span style={s.boardAvatar}>{a.avatar}</span>
-              <span style={s.boardName(a.isMe)}>{a.name}{a.isMe ? " (moi)" : ""}</span>
-              <span style={s.boardScore(a.isMe)}>{a.score} pts</span>
-              <span style={s.boardTrend(a.isMe)}>{a.trend}</span>
-              {a.badge && <span style={s.boardBadge}>{a.badge}</span>}
+              <div style={{fontSize:"0.62rem",fontWeight:700,padding:"4px 10px",borderRadius:20,background:"#E8F4EA",color:C.moss,flexShrink:0}}>Livré</div>
             </div>
           ))}
-          <div style={{ background:"#F5F2EE", borderRadius:14, padding:"12px 14px", marginTop:4, fontSize:"0.68rem", color:"#6B5B3E", textAlign:"center" }}>
-            +2 places ce mois · Continue comme ça ! 🌱
+        </div>
+
+        <div style={{...ss.sec,paddingTop:18}}>
+          <div style={ss.secH}>
+            <div style={ss.secTitle}>Passeport Saisons 🌿</div>
+            <span style={ss.seeAll}>2/12 tampons</span>
           </div>
-        </div>
-        <div style={{ height:20 }} />
-      </>}
-
-      {/* PAGE PROFIL */}
-      {activePage === "profil" && <>
-        <div style={s.profilHero}>
-          <span style={s.profilAva}>👤</span>
-          <div style={s.profilName}>Mon profil</div>
-          <div style={s.profilSub}>Consommateur local · Lyon · Membre depuis mai 2026</div>
-          <div style={s.profilScore}>🌿 1 980 pts · Rang #3</div>
-        </div>
-
-        <div style={s.section}>
-          <div style={s.secTitle}>Mon impact</div>
-          <div style={{ ...s.ecoBlock, margin:"12px 0 0" }}>
-            <div style={s.ecoSub}>Basé sur tes visites et achats déclarés</div>
-            {[["Km parcourus",85,"A+"],["Local < 100km",70,"A"],["Saisonnalité",92,"A+"],["Anti-gaspi",55,"B+"]].map(([label,pct,val]) => (
-              <div key={label} style={s.ecoBarRow}>
-                <div style={s.ecoBarLabel}>{label}</div>
-                <div style={s.ecoBarTrack}><div style={s.ecoBarFill(pct)} /></div>
-                <div style={s.ecoBarVal}>{val}</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6,marginTop:12}}>
+            {MOIS_LABELS.map((m,i)=>(
+              <div key={m} style={{background:i<2?C.moss:"#F5F2EE",borderRadius:10,padding:"8px 4px",textAlign:"center",opacity:i<2?1:0.5}}>
+                <span style={{fontSize:"1.1rem",display:"block",marginBottom:2}}>{i<2?"🌿":"○"}</span>
+                <span style={{fontSize:"0.57rem",fontWeight:700,color:i<2?"white":"#6B5B3E",display:"block"}}>{m}</span>
               </div>
             ))}
           </div>
         </div>
-
-        <div style={{ ...s.section, paddingTop:18 }}>
-          <div style={s.secTitle}>Mes badges</div>
-          <div style={{ ...s.badgeGrid, marginTop:12 }}>
-            {BADGES.map((b,i) => (
-              <div key={i} style={s.badgeCard(b.unlocked)}>
-                <span style={s.badgeEmoji(b.unlocked)}>{b.emoji}</span>
-                <span style={s.badgeName}>{b.name}</span>
-                {!b.unlocked && <span style={s.badgeLock}>🔒</span>}
-              </div>
-            ))}
-          </div>
-        </div>
-        <div style={{ height:20 }} />
+        <div style={{height:20}}/>
       </>}
 
       {/* BOTTOM NAV */}
-      <div style={s.nav}>
-        {navItems.map(([icon,page,label]) => (
-          <div key={page} style={s.navItem(activePage===page)} onClick={() => setActivePage(page)}>
-            <div style={s.navIcon}>{icon}</div>
-            <div style={s.navLabel(activePage===page)}>{label}</div>
+      <div style={ss.nav}>
+        {navItems.map(([icon,page,label])=>(
+          <div key={page} style={ss.navItem(activePage===page)} onClick={()=>setActivePage(page)}>
+            <div style={{fontSize:"1.2rem"}}>{icon}</div>
+            <div style={ss.navLabel(activePage===page)}>{label}</div>
+            {page==="commander" && totalItems>0 && <div style={ss.navBadge}>{totalItems}</div>}
           </div>
         ))}
       </div>
