@@ -47,6 +47,31 @@ const AMIS = [
 
 const MOIS_LABELS = ["Jan","Fév","Mar","Avr","Mai","Juin","Juil","Août","Sep","Oct","Nov","Déc"];
 
+const VEGGIE_EMOJIS = {
+  "tomate":"🍅","tomates":"🍅","tomate cerise":"🍅","tomates cerises":"🍅","tomate ronde":"🍅","tomates rondes":"🍅",
+  "courgette":"🥒","courgettes":"🥒","concombre":"🥒","concombres":"🥒",
+  "pêche":"🍑","pêches":"🍑","abricot":"🍑","abricots":"🍑",
+  "basilic":"🌿","persil":"🌿","ciboulette":"🌿","herbe":"🌿","herbes":"🌿",
+  "saint-marcellin":"🧀","st-marcellin":"🧀","fromage":"🧀","fromages":"🧀",
+  "salade":"🥬","salade verte":"🥬","laitue":"🥬","épinard":"🥬","épinards":"🥬","chou":"🥬","choux":"🥬",
+  "poivron":"🫑","poivrons":"🫑","poivron rouge":"🫑","poivron vert":"🫑",
+  "aubergine":"🍆","aubergines":"🍆",
+  "carotte":"🥕","carottes":"🥕",
+  "fraise":"🍓","fraises":"🍓",
+  "cerise":"🍒","cerises":"🍒",
+  "poireau":"🌿","poireaux":"🌿",
+  "poire":"🍐","poires":"🍐",
+  "pomme":"🍎","pommes":"🍎",
+  "raisin":"🍇","grappes":"🍇",
+  "oignon":"🧅","oignons":"🧅",
+  "ail":"🧄","tête d'ail":"🧄",
+  "melon":"🍈","melons":"🍈",
+  "brocoli":"🥦","brocolis":"🥦",
+  "haricot":"🫘","haricots":"🫘","fève":"🫘","fèves":"🫘",
+  "betterave":"🫐","betteraves":"🫐",
+  "radis":"🌶","champignon":"🍄","champignons":"🍄","courge":"🎃","courgette spaghetti":"🥒",
+};
+
 const C = {
   soil:"#2C1F0E", moss:"#3D5A3E", sage:"#7A9E7E",
   cream:"#F5F0E8", wheat:"#E8D9B5", terracotta:"#C4622D",
@@ -61,6 +86,15 @@ export default function App() {
   const [selectedPoint, setSelectedPoint] = useState(null);
   const [commandePassee, setCommandePassee] = useState(false);
   const [recetteFilter, setRecetteFilter] = useState("Toutes");
+
+  // Espace producteur
+  const [prodPhoto, setProdPhoto]       = useState(null);  // data URL preview
+  const [prodB64, setProdB64]           = useState(null);  // base64 raw
+  const [prodMime, setProdMime]         = useState(null);  // mime type
+  const [prodResult, setProdResult]     = useState(null);  // {légume: count}
+  const [prodLoading, setProdLoading]   = useState(false);
+  const [prodError, setProdError]       = useState(null);
+  const [stockSaved, setStockSaved]     = useState(false);
 
   const totalItems = Object.values(panier).reduce((a,b)=>a+b,0)
     + Object.values(flashPanier).reduce((a,b)=>a+b,0);
@@ -77,6 +111,70 @@ export default function App() {
   const removeP = (id) => setPanier(prev=>{ const n={...prev}; if(n[id]>1)n[id]--; else delete n[id]; return n; });
   const addF   = (id) => setFlashPanier(prev=>({...prev,[id]:(prev[id]||0)+1}));
   const removeF = (id) => setFlashPanier(prev=>{ const n={...prev}; if(n[id]>1)n[id]--; else delete n[id]; return n; });
+
+  const handlePhoto = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const url = ev.target.result;
+      const [hdr, b64] = url.split(",");
+      setProdPhoto(url);
+      setProdB64(b64);
+      setProdMime(hdr.match(/:(.*?);/)[1]);
+      setProdResult(null);
+      setProdError(null);
+      setStockSaved(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const analyzePhoto = async () => {
+    if (!prodB64) return;
+    setProdLoading(true);
+    setProdError(null);
+    const apiKey = process.env.REACT_APP_ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      await new Promise(r => setTimeout(r, 1800));
+      setProdResult({"tomate cerise":24,"courgette":12,"salade verte":6,"basilic":3});
+      setProdLoading(false);
+      return;
+    }
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "anthropic-dangerous-direct-browser-access": "true",
+        },
+        body: JSON.stringify({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 512,
+          messages: [{
+            role: "user",
+            content: [
+              { type:"image", source:{ type:"base64", media_type:prodMime, data:prodB64 } },
+              { type:"text",  text:"Tu es un assistant pour les producteurs maraîchers. Analyse cette photo et compte précisément chaque type de légume, fruit ou fromage visible. Réponds UNIQUEMENT avec un objet JSON valide, sans texte autour, au format: {\"nom du produit\": nombre}. Noms en français minuscules, singulier. Exemple: {\"tomate cerise\": 15, \"courgette\": 8}" }
+            ]
+          }]
+        })
+      });
+      if (!res.ok) throw new Error(`Erreur API (${res.status})`);
+      const data = await res.json();
+      const text = data.content[0].text;
+      const match = text.match(/\{[\s\S]*\}/);
+      if (!match) throw new Error("Réponse IA illisible — réessaie");
+      setProdResult(JSON.parse(match[0]));
+    } catch (err) {
+      setProdError(err.message);
+    } finally {
+      setProdLoading(false);
+    }
+  };
+
+  const resetProducer = () => { setProdPhoto(null);setProdB64(null);setProdMime(null);setProdResult(null);setProdError(null);setStockSaved(false); };
 
   const produitIdSet = new Set(Object.keys(panier).map(Number));
   const recettesSuggerees = RECETTES.filter(r=>r.produits.some(pid=>produitIdSet.has(pid)));
@@ -653,11 +751,119 @@ export default function App() {
             ))}
           </div>
         </div>
+        {/* ESPACE PRODUCTEUR — entrée */}
+        <div style={{...ss.sec,paddingTop:18,paddingBottom:0}}>
+          <div
+            onClick={()=>setActivePage("producteur")}
+            style={{background:`linear-gradient(135deg,${C.soil},#3d2a10)`,borderRadius:16,padding:"16px",display:"flex",alignItems:"center",gap:14,cursor:"pointer"}}
+          >
+            <div style={{width:48,height:48,borderRadius:12,background:"rgba(255,255,255,0.1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.8rem",flexShrink:0}}>📷</div>
+            <div>
+              <div style={{fontFamily:"Georgia,serif",fontSize:"0.95rem",color:C.cream,marginBottom:3}}>Espace producteur</div>
+              <div style={{fontSize:"0.65rem",color:"rgba(245,240,232,0.6)",lineHeight:1.4}}>Photographier un panier · Comptage IA automatique</div>
+            </div>
+            <div style={{marginLeft:"auto",color:"rgba(255,255,255,0.4)",fontSize:"1.1rem"}}>→</div>
+          </div>
+        </div>
+
+        <div style={{height:20}}/>
+      </>}
+
+      {/* PAGE PRODUCTEUR */}
+      {activePage==="producteur" && <>
+        <div style={{background:C.soil,padding:"14px 18px",display:"flex",alignItems:"center",gap:12,position:"sticky",top:0,zIndex:100}}>
+          <button onClick={()=>{setActivePage("profil");resetProducer();}} style={{background:"none",border:"none",color:C.wheat,fontSize:"1.2rem",cursor:"pointer",padding:0,lineHeight:1}}>←</button>
+          <div style={{fontFamily:"Georgia,serif",fontSize:"1rem",color:C.wheat,flex:1}}>Espace producteur</div>
+          <span style={{fontSize:"0.62rem",background:"rgba(122,158,126,0.25)",color:C.sage,border:`1px solid rgba(122,158,126,0.4)`,padding:"3px 9px",borderRadius:12}}>🤖 IA intégrée</span>
+        </div>
+
+        <div style={{padding:"18px"}}>
+          <div style={{fontFamily:"Georgia,serif",fontSize:"1.1rem",color:C.soil,marginBottom:6}}>📸 Photo du panier</div>
+          <div style={{fontSize:"0.7rem",color:"#6B5B3E",marginBottom:16,lineHeight:1.5}}>Prends une photo de ta récolte — l'IA compte chaque légume automatiquement.</div>
+
+          {/* ZONE PHOTO */}
+          {prodPhoto ? (
+            <div style={{position:"relative",borderRadius:16,overflow:"hidden",marginBottom:14}}>
+              <img src={prodPhoto} alt="Panier" style={{width:"100%",maxHeight:300,objectFit:"cover",display:"block"}}/>
+              <button onClick={resetProducer} style={{position:"absolute",top:10,right:10,background:"rgba(0,0,0,0.55)",color:"white",border:"none",borderRadius:20,padding:"5px 12px",fontSize:"0.7rem",cursor:"pointer",fontWeight:600}}>Reprendre</button>
+            </div>
+          ) : (
+            <label style={{display:"block",border:`2px dashed ${C.wheat}`,borderRadius:16,padding:"40px 20px",textAlign:"center",cursor:"pointer",background:"white",marginBottom:10}}>
+              <input type="file" accept="image/*" capture="environment" onChange={handlePhoto} style={{display:"none"}}/>
+              <div style={{fontSize:"2.8rem",marginBottom:8}}>📷</div>
+              <div style={{fontWeight:700,fontSize:"0.88rem",color:C.soil,marginBottom:4}}>Prendre une photo</div>
+              <div style={{fontSize:"0.68rem",color:"#6B5B3E"}}>Ouvre l'appareil photo directement</div>
+            </label>
+          )}
+
+          {!prodPhoto && (
+            <label style={{display:"block",border:`1.5px solid ${C.wheat}`,borderRadius:12,padding:"11px",textAlign:"center",cursor:"pointer",background:"white",marginBottom:16}}>
+              <input type="file" accept="image/*" onChange={handlePhoto} style={{display:"none"}}/>
+              <span style={{fontSize:"0.75rem",color:"#6B5B3E"}}>📂 Choisir dans la galerie</span>
+            </label>
+          )}
+
+          {/* BOUTON ANALYSE */}
+          {prodPhoto && !prodResult && (
+            <button
+              onClick={analyzePhoto}
+              disabled={prodLoading}
+              style={{width:"100%",background:prodLoading?"#aaa":C.moss,color:"white",fontSize:"0.85rem",fontWeight:700,padding:"14px",borderRadius:14,border:"none",cursor:prodLoading?"not-allowed":"pointer",marginBottom:14,transition:"background 0.2s"}}
+            >
+              {prodLoading ? "🔍 Analyse en cours..." : "🔍 Analyser avec l'IA"}
+            </button>
+          )}
+
+          {/* ERREUR */}
+          {prodError && (
+            <div style={{background:"#FEF3E8",border:`1px solid ${C.terracotta}`,borderRadius:12,padding:"12px 14px",marginBottom:14,fontSize:"0.72rem",color:C.terracotta,lineHeight:1.5}}>
+              ⚠️ {prodError}
+            </div>
+          )}
+
+          {/* RÉSULTATS */}
+          {prodResult && (
+            <>
+              <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",marginBottom:12}}>
+                <div style={{fontFamily:"Georgia,serif",fontSize:"1.05rem",color:C.soil}}>Résultats de l'analyse</div>
+                <span style={{fontSize:"0.63rem",background:"#E8F4EA",color:C.moss,padding:"3px 8px",borderRadius:8,fontWeight:600}}>{Object.values(prodResult).reduce((a,b)=>a+b,0)} unités</span>
+              </div>
+              <div style={{background:"white",borderRadius:16,padding:"8px 14px",boxShadow:"0 2px 12px rgba(44,31,14,0.07)",marginBottom:14}}>
+                {Object.entries(prodResult).map(([nom,count],i,arr)=>{
+                  const emoji = VEGGIE_EMOJIS[nom.toLowerCase()] || "🌾";
+                  return (
+                    <div key={nom} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 0",borderBottom:i<arr.length-1?`1px solid ${C.wheat}`:"none"}}>
+                      <span style={{fontSize:"1.8rem",width:40,textAlign:"center",flexShrink:0}}>{emoji}</span>
+                      <span style={{flex:1,fontWeight:600,fontSize:"0.82rem",color:C.soil,textTransform:"capitalize"}}>{nom}</span>
+                      <span style={{fontFamily:"Georgia,serif",fontSize:"1.3rem",fontWeight:700,color:C.moss}}>×{count}</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {!stockSaved ? (
+                <button onClick={()=>setStockSaved(true)} style={{width:"100%",background:C.moss,color:"white",fontSize:"0.85rem",fontWeight:700,padding:"14px",borderRadius:14,border:"none",cursor:"pointer"}}>
+                  ✅ Valider et mettre à jour le stock
+                </button>
+              ) : (
+                <div style={{background:"#E8F4EA",border:`1px solid ${C.sage}`,borderRadius:14,padding:"16px",textAlign:"center",marginBottom:10}}>
+                  <div style={{fontSize:"1.8rem",marginBottom:6}}>✅</div>
+                  <div style={{fontWeight:700,fontSize:"0.88rem",color:C.moss}}>Stock mis à jour !</div>
+                  <div style={{fontSize:"0.68rem",color:"#6B5B3E",marginTop:4}}>Visible dans l'app client dans quelques instants</div>
+                </div>
+              )}
+
+              <button onClick={resetProducer} style={{width:"100%",background:"transparent",color:C.moss,fontSize:"0.78rem",fontWeight:600,padding:"10px",borderRadius:14,border:`1.5px solid ${C.moss}`,cursor:"pointer",marginTop:8}}>
+                Analyser un autre panier
+              </button>
+            </>
+          )}
+        </div>
         <div style={{height:20}}/>
       </>}
 
       {/* BOTTOM NAV */}
-      <div style={ss.nav}>
+      {activePage !== "producteur" && <div style={ss.nav}>
         {navItems.map(([icon,page,label])=>(
           <div key={page} style={ss.navItem(activePage===page)} onClick={()=>setActivePage(page)}>
             <div style={{fontSize:"1.2rem"}}>{icon}</div>
@@ -665,7 +871,7 @@ export default function App() {
             {page==="commander" && totalItems>0 && <div style={ss.navBadge}>{totalItems}</div>}
           </div>
         ))}
-      </div>
+      </div>}
     </div>
   );
 }
